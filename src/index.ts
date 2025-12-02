@@ -12,6 +12,45 @@ const jwtInstance = jwt({
 
 const app = new Elysia<any>()
   .use(jwtInstance)
+  .ws("/realtime", {
+    body: t.Object({
+      type: t.String(),
+      payload: t.Any(),
+    }),
+    async open(ws, { request, jwt }) {
+      const token = request.headers.get("authorization")?.split(" ")[1];
+      if (!token) {
+        ws.close(4001, "No token");
+        return;
+      }
+      const payload = await jwt.verify(token);
+      if (!payload) {
+        ws.close(4002, "Invalid token");
+        return;
+      }
+      (ws as any).info = payload; // save it to redis
+      console.log("🔗 WS opened for user", payload);
+    },
+    message(ws, msg) {
+      const { type, payload } = msg;
+      switch (type) {
+        case "listen:user":
+          // user will send message listen <trip id>
+          // we have to send it the updates on the trips status with captain location
+          break;
+        case "send:captain":
+          // captain send lat and long through the ws
+          // we have to send it the updates on the trips status
+          break;
+        default:
+          break;
+      }
+    },
+    // clean up when client disconnects
+    close(ws) {
+      console.log("❌ client left");
+    },
+  })
   .group("/auth", (app) =>
     app
       .post(
