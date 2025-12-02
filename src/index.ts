@@ -1,13 +1,12 @@
 import { Elysia, status, t } from "elysia";
 import { prisma } from "../lib/prisma";
 import { jwt } from "@elysiajs/jwt";
-import { websocket } from "@elysiajs/websocket";
 import bcrypt from "bcrypt";
 import { Decimal } from "decimal.js";
 
 const jwtInstance = jwt({
   name: "jwt",
-  secret: process.env.JWT_SECRET || "uber",
+  secret: "uber",
   exp: "7d",
 });
 
@@ -332,9 +331,13 @@ const app = new Elysia<any>()
           }),
         },
       ),
-  )
-  .listen(3000);
+  );
+export default app;
 
-console.log(
-  `🦊 uber backend Elysia is running at ${app.server?.hostname}:${app.server?.port}`,
-);
+if (import.meta.main) {
+  app.listen(3000);
+
+  console.log(
+    `🦊 uber backend Elysia is running at ${app.server?.hostname}:${app.server?.port}`,
+  );
+}
