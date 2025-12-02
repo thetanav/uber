@@ -1,15 +1,18 @@
 import { Elysia, status, t } from "elysia";
 import { prisma } from "../lib/prisma";
 import { jwt } from "@elysiajs/jwt";
+import { websocket } from "@elysiajs/websocket";
+import bcrypt from "bcrypt";
+import { Decimal } from "decimal.js";
+
+const jwtInstance = jwt({
+  name: "jwt",
+  secret: process.env.JWT_SECRET || "uber",
+  exp: "7d",
+});
 
 const app = new Elysia<any>()
-  .use(
-    jwt({
-      name: "jwt",
-      secret: "uber",
-      exp: "7d",
-    }),
-  )
+  .use(jwtInstance)
   .group("/auth", (app) =>
     app
       .post(
@@ -35,7 +38,7 @@ const app = new Elysia<any>()
               vehicle,
               capacity,
               email,
-              password,
+              password: await bcrypt.hash(password, 10),
             },
           });
           return { message: "Captain created!" };
@@ -45,7 +48,7 @@ const app = new Elysia<any>()
             name: t.String(),
             vehicle: t.String(),
             capacity: t.Number(),
-            email: t.String(),
+            email: t.String({ format: "email" }),
             password: t.String(),
             confirmPassword: t.String(),
           }),
@@ -60,10 +63,10 @@ const app = new Elysia<any>()
             throw new Error("Passwords do not match");
           }
           // Check if email is already in use
-          const existingCaptain = await prisma.captain.findUnique({
+          const existingUser = await prisma.user.findUnique({
             where: { email },
           });
-          if (existingCaptain) {
+          if (existingUser) {
             throw new Error("Email already in use");
           }
           // Create user
@@ -71,7 +74,7 @@ const app = new Elysia<any>()
             data: {
               name,
               email,
-              password,
+              password: await bcrypt.hash(password, 10),
             },
           });
           return { message: "User created!" };
@@ -79,7 +82,7 @@ const app = new Elysia<any>()
         {
           body: t.Object({
             name: t.String(),
-            email: t.String(),
+            email: t.String({ format: "email" }),
             password: t.String(),
             confirmPassword: t.String(),
           }),
@@ -92,13 +95,13 @@ const app = new Elysia<any>()
           const user = await prisma.user.findUnique({
             where: { email },
           });
-          if (user && user.password == password)
+          if (user && (await bcrypt.compare(password, user.password)))
             return jwt.sign({ user: user.id, role: "user" });
           return { message: "Login unsuccessful!" };
         },
         {
           body: t.Object({
-            email: t.String(),
+            email: t.String({ format: "email" }),
             password: t.String(),
           }),
         },
@@ -110,13 +113,13 @@ const app = new Elysia<any>()
           const captain = await prisma.captain.findUnique({
             where: { email },
           });
-          if (captain && captain.password == password)
+          if (captain && (await bcrypt.compare(password, captain.password)))
             return jwt.sign({ user: captain.id, role: "captain" });
           return { message: "Login unsuccessful!" };
         },
         {
           body: t.Object({
-            email: t.String(),
+            email: t.String({ format: "email" }),
             password: t.String(),
           }),
         },
@@ -133,7 +136,7 @@ const app = new Elysia<any>()
           if (!payload) return status(401, "Unauthorized");
 
           const user = await prisma.user.findUnique({
-            where: { id: payload.user },
+            where: { id: payload.user as string },
           });
           if (!user) return status(401, "Unauthorized");
           const otp = Math.floor(1000 + Math.random() * 9000).toString();
@@ -147,6 +150,7 @@ const app = new Elysia<any>()
               destLat: destination.latitude,
               destLng: destination.longitude,
               capacity,
+              pricing: new Decimal(0),
               status: "REQUESTED",
               otp,
             },
@@ -182,15 +186,25 @@ const app = new Elysia<any>()
           });
           if (!trip) return { message: "Trip not found!" };
 
-          if (payload.role == "captain" && trip.captainId == payload.user) {
+          if (
+            payload.role === "captain" &&
+            trip.captainId === (payload.user as string)
+          ) {
             await prisma.trip.update({
               where: { id },
               data: { status: "CANCELLED" },
             });
-          } else if (payload.role == "user" && trip.userId == payload.user) {
-            if (trip.status == "ACCEPTED") {
+          } else if (
+            payload.role === "user" &&
+            trip.userId === (payload.user as string)
+          ) {
+            if (trip.status === "ACCEPTED") {
               return { message: "Ride has already started!" };
             }
+            await prisma.trip.update({
+              where: { id },
+              data: { status: "CANCELLED" },
+            });
           } else {
             return status(401, "Unauthorized");
           }
@@ -207,19 +221,34 @@ const app = new Elysia<any>()
         "/pickup",
         async ({ jwt, body, headers: { authorization } }) => {
           // check the trip id and otp of the trip and also the trip has not started also the trip captain is the
-          const { id } = body;
+          const { id, otp } = body;
           const payload = await jwt.verify(authorization);
 
           if (!payload) return status(401, "Unauthorized");
 
           const captain = await prisma.captain.findUnique({
-            where: { id: payload.user! },
+            where: { id: payload.user as string },
           });
           if (!captain) return status(401, "Unauthorized");
 
-          // TODO: Implement pickup logic
+          const trip = await prisma.trip.findUnique({
+            where: { id },
+          });
+          if (
+            !trip ||
+            trip.captainId !== captain.id ||
+            trip.status !== "ACCEPTED" ||
+            trip.otp !== otp
+          ) {
+            return { message: "Invalid trip or OTP!" };
+          }
 
-          return { message: "Trip cancelled successfully!" };
+          await prisma.trip.update({
+            where: { id },
+            data: { status: "ON_TRIP" },
+          });
+
+          return { message: "Trip picked up successfully!" };
         },
         {
           body: t.Object({
@@ -229,7 +258,7 @@ const app = new Elysia<any>()
         },
       )
       .post(
-        "/compelete",
+        "/complete",
         async ({ jwt, body, headers: { authorization } }) => {
           const { id } = body;
           const payload = await jwt.verify(authorization);
@@ -237,11 +266,27 @@ const app = new Elysia<any>()
           if (!payload) return status(401, "Unauthorized");
 
           const captain = await prisma.captain.findUnique({
-            where: { id: payload.user! },
+            where: { id: payload.user as string },
           });
           if (!captain) return status(401, "Unauthorized");
 
-          // here have to check the trip ended
+          const trip = await prisma.trip.findUnique({
+            where: { id },
+          });
+          if (
+            !trip ||
+            trip.captainId !== captain.id ||
+            trip.status !== "ON_TRIP"
+          ) {
+            return { message: "Invalid trip!" };
+          }
+
+          await prisma.trip.update({
+            where: { id },
+            data: { status: "COMPLETED" },
+          });
+
+          return { message: "Trip completed successfully!" };
         },
         {
           body: t.Object({
@@ -258,7 +303,7 @@ const app = new Elysia<any>()
           if (!payload) return status(401, "Unauthorized");
 
           const captain = await prisma.captain.findUnique({
-            where: { id: payload.user! },
+            where: { id: payload.user as string },
           });
           if (!captain) return status(401, "Unauthorized");
 
@@ -267,7 +312,7 @@ const app = new Elysia<any>()
           });
           if (!trip) return { message: "Trip not found!" };
 
-          if (payload.role == "captain") {
+          if (payload.role === "captain" && trip.status === "REQUESTED") {
             await prisma.trip.update({
               where: { id },
               data: {
