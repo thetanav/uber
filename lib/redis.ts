@@ -55,6 +55,8 @@ export const redisService = {
 
   /**
    * Get WebSocket connection for a user
+   * Note: This is synchronous because WebSocket objects are only stored in-memory
+   * (they cannot be serialized to Redis)
    */
   getUserConnection(userId: string): any {
     return inMemoryStorage.userMap.get(userId);
@@ -82,6 +84,8 @@ export const redisService = {
 
   /**
    * Get WebSocket connection for a captain
+   * Note: This is synchronous because WebSocket objects are only stored in-memory
+   * (they cannot be serialized to Redis)
    */
   getCaptainConnection(captainId: string): any {
     return inMemoryStorage.captainMap.get(captainId);
