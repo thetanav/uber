@@ -19,6 +19,7 @@
     "prismabox": "^1.1.25"
   },
   "devDependencies": {
+    "@elysiajs/eden": "^1.4.5",
     "@types/bcrypt": "^6.0.0",
     "@types/jsonwebtoken": "^9.0.10",
     "@typescript-eslint/eslint-plugin": "^8.48.1",
@@ -26,7 +27,8 @@
     "bun-types": "latest",
     "eslint": "^9.39.1",
     "prisma": "^7.0.1",
-    "vitest": "^4.0.15"
+    "vitest": "^4.0.15",
+    "ws": "^8.18.3"
   },
   "type": "module",
   "module": "src/index.js"
