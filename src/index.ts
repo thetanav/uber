@@ -167,8 +167,7 @@ app.ws("/realtime", {
           id: t.String(),
         }),
       },
-    ),
-);
+    );
 
 app.listen(process.env.PORT || 3000);
 
