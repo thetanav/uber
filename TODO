@@ -1,0 +1,10 @@
+[ ] Modularize code: Split into controllers, services, middleware.
+[ ] Replace in-memory maps with Redis for state management.
+[ ] Add error handling, logging, and validation.
+[ ] Implement security: rate limiting, CORS, CSRF, input sanitization.
+[ ] Write comprehensive tests (unit, integration).
+[ ] Add API docs (Swagger/OpenAPI).
+[ ] Implement caching and background jobs.
+[ ] Set up monitoring, metrics, and env var management.
+[ ] Add missing endpoints (trip history, profiles).
+[ ] Integrate pricing, geolocation, and consider microservices.

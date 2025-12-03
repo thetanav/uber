@@ -1,0 +1,108 @@
+import { Elysia, t, status } from "elysia";
+import { jwtPlugin } from "../lib/jwt";
+import { prisma } from "../lib/prisma";
+import { Decimal } from "decimal.js";
+
+export const user = new Elysia({ prefix: "/user" })
+  .use(jwtPlugin)
+  .post(
+    "/user/request",
+    async ({ jwt, body, headers: { authorization } }) => {
+      const { origin, destination, capacity } = body;
+      if (!authorization) return status(401, "Unauthorized");
+      let payload: any;
+      try {
+        payload = await jwt.verify(authorization);
+      } catch {
+        return status(401, "Unauthorized");
+      }
+
+      const user = await prisma.user.findUnique({
+        where: { id: payload.user as string },
+      });
+      if (!user) return status(401, "Unauthorized");
+      const otp = Math.floor(1000 + Math.random() * 9000).toString();
+      const trip = await prisma.trip.create({
+        data: {
+          user: { connect: { id: user.id } },
+          origin: origin.name,
+          originLat: origin.latitude,
+          originLng: origin.longitude,
+          destination: destination.name,
+          destLat: destination.latitude,
+          destLng: destination.longitude,
+          capacity,
+          pricing: new Decimal(0),
+          status: "REQUESTED",
+          otp,
+        },
+      });
+      return { message: "Trip created successfully!", id: trip.id, otp };
+    },
+    {
+      body: t.Object({
+        origin: t.Object({
+          name: t.String(),
+          latitude: t.Number(),
+          longitude: t.Number(),
+        }),
+        destination: t.Object({
+          name: t.String(),
+          latitude: t.Number(),
+          longitude: t.Number(),
+        }),
+        capacity: t.Number(),
+      }),
+    },
+  )
+  .post(
+    "/master/cancel",
+    async ({ jwt, body, headers: { authorization } }) => {
+      const { id } = body;
+      if (!authorization) return status(401, "Unauthorized");
+      let payload: any;
+      try {
+        payload = await jwt.verify(authorization);
+      } catch {
+        return status(401, "Unauthorized");
+      }
+
+      const trip = await prisma.trip.findUnique({
+        where: { id },
+      });
+      if (!trip) return { message: "Trip not found!" };
+
+      if (
+        payload.role === "captain" &&
+        trip.captainId === (payload.user as string)
+      ) {
+        await prisma.trip.update({
+          where: { id },
+          data: { status: "CANCELLED" },
+        });
+      } else if (
+        payload.role === "user" &&
+        trip.userId === (payload.user as string)
+      ) {
+        if (trip.status === "ACCEPTED") {
+          return { message: "Ride has already started!" };
+        }
+        await prisma.trip.update({
+          where: { id },
+          data: { status: "CANCELLED" },
+        });
+      } else {
+        return status(401, "Unauthorized");
+      }
+
+      const userId = tripUserMap.get(trip.id);
+      const wss = userId ? userMap.get(userId) : undefined;
+      if (wss) wss.send(JSON.stringify({ type: "CANCELLED" }));
+      return { message: "Trip cancelled successfully!" };
+    },
+    {
+      body: t.Object({
+        id: t.String(),
+      }),
+    },
+  );
