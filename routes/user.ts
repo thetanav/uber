@@ -5,6 +5,7 @@ import { Decimal } from "decimal.js";
 import { getTripForUser } from "../lib/redis";
 import { userMap } from "../src";
 import { poolForCaptains } from "../lib/background";
+import { notifyCaptainTripStatus } from "./ws";
 
 export const user = new Elysia({ prefix: "/user" })
   .use(jwtPlugin)
@@ -84,13 +85,14 @@ export const user = new Elysia({ prefix: "/user" })
           where: { id },
           data: { status: "CANCELLED" },
         });
+        // Notify captain if assigned
+        if (trip.captainId) {
+          notifyCaptainTripStatus(trip.captainId, trip.id, "CANCELLED");
+        }
       } else {
         return status(401, "Unauthorized");
       }
 
-      const userId = await getTripForUser(trip.id);
-      const wss = userId ? userMap.get(userId) : undefined;
-      if (wss) wss.send(JSON.stringify({ type: "CANCELLED" }));
       return { message: "Trip cancelled successfully!" };
     },
     {

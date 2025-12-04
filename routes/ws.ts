@@ -8,7 +8,33 @@ import {
   saveCaptainLocation,
   getCaptainLocation,
 } from "../lib/redis";
-import { p } from "vitest/dist/chunks/reporters.d.OXEK7y4s";
+
+// Notification functions for trip status updates
+export const notifyUserTripStatus = (
+  userId: string,
+  tripId: string,
+  status: string,
+) => {
+  const ws = userMap.get(userId);
+  if (ws) {
+    ws.send(
+      JSON.stringify({ type: "status:update", payload: { tripId, status } }),
+    );
+  }
+};
+
+export const notifyCaptainTripStatus = (
+  captainId: string,
+  tripId: string,
+  status: string,
+) => {
+  const ws = captainMap.get(captainId);
+  if (ws) {
+    ws.send(
+      JSON.stringify({ type: "status:update", payload: { tripId, status } }),
+    );
+  }
+};
 
 export const ws = new Elysia().ws("/realtime", {
   async open(ws) {
@@ -37,111 +63,95 @@ export const ws = new Elysia().ws("/realtime", {
   async message(ws: any, msg: { type: string; payload: any }) {
     const { type, payload } = msg;
     switch (type) {
-      case "listen:user":
+      case "subscribe:trip":
         // payload { tripId }
-        // user will send message listen <trip id>
-        // we have to send it the updates on the trips status with captain location
+        // user subscribes to trip updates (location and status) after requesting
         const trip = await prisma.trip.findUnique({
           where: { id: payload.tripId },
+          include: { captain: true },
         });
-        if (!trip || trip.status != "ACCEPTED" || !trip.capacity) {
-          ws.send(JSON.stringify({ type: "error", payload: "Trip not found" }));
-          return;
-        }
-        const captainWs = captainMap.get(trip.captainId!);
-        if (!captainWs) {
+        if (!trip || trip.userId !== ws.info.user) {
           ws.send(
-            JSON.stringify({ type: "error", payload: "Captain not connected" }),
+            JSON.stringify({
+              type: "error",
+              payload: "Trip not found or unauthorized",
+            }),
           );
           return;
         }
-        userMap.set(payload.user, ws);
-        ws.send(JSON.stringify({ type: "success", payload: "Listening" }));
-        const captainLocation = await getCaptainLocation(trip.captainId!);
-        if (!captainLocation) {
+        userMap.set(ws.info.user, ws);
+        ws.send(
+          JSON.stringify({
+            type: "subscribed",
+            payload: { tripId: trip.id, status: trip.status },
+          }),
+        );
+        // Send initial captain location if available
+        if (trip.captainId && trip.status === "ACCEPTED") {
+          const captainLocation = await getCaptainLocation(trip.captainId);
+          if (captainLocation) {
+            ws.send(
+              JSON.stringify({
+                type: "location:update",
+                payload: {
+                  tripId: trip.id,
+                  lat: captainLocation.lat,
+                  long: captainLocation.long,
+                },
+              }),
+            );
+          }
+        }
+        break;
+      case "send:location":
+        // payload { lat, long, tripId? }
+        // captain sends location for pooling or during matched trip
+        if (ws.info.role !== "captain" || !payload.lat || !payload.long) {
           ws.send(
-            JSON.stringify({ type: "error", payload: "No location data" }),
+            JSON.stringify({ type: "error", payload: "Invalid payload" }),
           );
           return;
+        }
+        await saveCaptainLocation(ws.info.user, payload.lat, payload.long);
+        if (payload.tripId) {
+          // During matched trip, send to user
+          const userId = await getTripForUser(payload.tripId);
+          if (userId) {
+            const userWs = userMap.get(userId);
+            if (userWs) {
+              userWs.send(
+                JSON.stringify({
+                  type: "location:update",
+                  payload: {
+                    tripId: payload.tripId,
+                    lat: payload.lat,
+                    long: payload.long,
+                  },
+                }),
+              );
+            }
+          }
+        } else {
+          // Pooling: update captain status
+          await prisma.captain.update({
+            where: { id: ws.info.user },
+            data: {
+              isOnline: true,
+              inDrive: false,
+              isPooling: true,
+              currentLat: payload.lat,
+              currentLng: payload.long,
+            },
+          });
         }
         ws.send(
           JSON.stringify({
-            type: "update",
-            payload: {
-              lat: captainLocation.lat,
-              long: captainLocation.long,
-            },
+            type: "location:updated",
+            payload: "Location sent",
           }),
         );
         break;
-      case "send:captain":
-        // payload { lat, long, tripId }
-        if (
-          ws.info.role !== "captain" ||
-          !payload.lat ||
-          !payload.long ||
-          !payload.tripId
-        ) {
-          ws.send(JSON.stringify({ type: "error", payload: "" }));
-          return;
-        }
-        // captain send lat and long through the ws
-        // we have to send it the updates on the trips status
-        await saveCaptainLocation(payload.user, payload.lat, payload.long);
-        const userId = await getTripForUser(payload.tripId);
-        if (userId == undefined) {
-          const trip = await prisma.trip.findUnique({
-            where: { id: payload.tripId },
-            include: { captain: true },
-          });
-          if (!trip) {
-            ws.send(
-              JSON.stringify({ type: "error", payload: "Trip not found" }),
-            );
-            return;
-          }
-          await setTripForUser(payload.tripId, trip.userId);
-        }
-        const userWs = userMap.get(userId!);
-        if (userWs) {
-          userWs.send(
-            JSON.stringify({
-              type: "update",
-              payload: {
-                status: "in_progress",
-                location: { lat: payload.lat, long: payload.long },
-              },
-            }),
-          );
-          break;
-        }
-        ws.send(JSON.stringify({ type: "error", payload: "User not found" }));
-        break;
-      case "pool:captain":
-        // captain pools for trips and sends there live location
-        if (
-          ws.info.role !== "captain" ||
-          !payload.lat ||
-          !payload.long ||
-          !payload.tripId
-        ) {
-          ws.send(JSON.stringify({ type: "error", payload: "" }));
-          return;
-        }
-        await prisma.captain.update({
-          where: { id: payload.user },
-          data: {
-            isOnline: true,
-            inDrive: false,
-            isPooling: true,
-            currentLat: payload.lat,
-            currentLng: payload.long,
-          },
-        });
-        // captain send lat and long through the ws
-        // we have to save it
-        await saveCaptainLocation(payload.user, payload.lat, payload.long);
-        break;
+      // Removed pool:captain as it's now part of send:location without tripId
       default:
         break;
     }

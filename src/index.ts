@@ -4,7 +4,11 @@ import { jwtPlugin } from "../lib/jwt";
 import { auth } from "../routes/auth";
 import { user } from "../routes/user";
 import { captain } from "../routes/captain";
-import { ws } from "../routes/ws";
+import {
+  ws,
+  notifyUserTripStatus,
+  notifyCaptainTripStatus,
+} from "../routes/ws";
 
 const app = new Elysia()
   .use(jwtPlugin)
@@ -49,6 +53,9 @@ const app = new Elysia()
             captain: { connect: { id: captain.id } },
           },
         });
+        // Notify user and captain
+        notifyUserTripStatus(trip.userId, trip.id, "ACCEPTED");
+        notifyCaptainTripStatus(captain.id, trip.id, "ACCEPTED");
       } else {
         return status(401, "Unauthorized");
       }

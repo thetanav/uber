@@ -3,6 +3,7 @@ import { jwtPlugin } from "../lib/jwt";
 import { prisma } from "../lib/prisma";
 import { getTripForUser } from "../lib/redis";
 import { userMap } from "../src";
+import { notifyUserTripStatus } from "./ws";
 
 export const captain = new Elysia({ prefix: "/captain" })
   .use(jwtPlugin)
@@ -31,13 +32,12 @@ export const captain = new Elysia({ prefix: "/captain" })
           where: { id },
           data: { status: "CANCELLED" },
         });
+        // Notify user
+        notifyUserTripStatus(trip.userId, trip.id, "CANCELLED");
       } else {
         return status(401, "Unauthorized");
       }
 
-      const userId = await getTripForUser(trip.id);
-      const wss = userId ? userMap.get(userId) : undefined;
-      if (wss) wss.send(JSON.stringify({ type: "CANCELLED" }));
       return { message: "Trip cancelled successfully!" };
     },
     {
@@ -81,9 +81,8 @@ export const captain = new Elysia({ prefix: "/captain" })
         data: { status: "ON_TRIP" },
       });
 
-      const userId = await getTripForUser(trip.id);
-      const wss = userId ? userMap.get(userId) : undefined;
-      if (wss) wss.send(JSON.stringify({ type: "ON_TRIP" }));
+      // Notify user
+      notifyUserTripStatus(trip.userId, trip.id, "ON_TRIP");
       return { message: "Trip picked up successfully!" };
     },
     {
@@ -122,9 +121,8 @@ export const captain = new Elysia({ prefix: "/captain" })
         data: { status: "COMPLETED" },
       });
 
-      const userId = await getTripForUser(trip.id);
-      const wss = userId ? userMap.get(userId) : undefined;
-      if (wss) wss.send(JSON.stringify({ type: "COMPLETED" }));
+      // Notify user
+      notifyUserTripStatus(trip.userId, trip.id, "COMPLETED");
       return { message: "Trip completed successfully!" };
     },
     {
