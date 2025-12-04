@@ -1,135 +1,179 @@
-# Turborepo starter
+# Uber Clone 🚗
 
-This Turborepo starter is maintained by the Turborepo core team.
+A full-stack ride-sharing application built with modern web technologies. Experience seamless trip booking, real-time tracking, and captain management in this comprehensive Uber-like platform.
 
-## Using this example
+![Node.js](https://img.shields.io/badge/Node.js-18+-green)
+![TypeScript](https://img.shields.io/badge/TypeScript-5.9-blue)
+![Next.js](https://img.shields.io/badge/Next.js-16-orange)
+![Elysia](https://img.shields.io/badge/Elysia-latest-purple)
+![Prisma](https://img.shields.io/badge/Prisma-7.0-cyan)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-latest-blue)
+![Redis](https://img.shields.io/badge/Redis-latest-red)
+![WebSockets](https://img.shields.io/badge/WebSockets-enabled-yellow)
 
-Run the following command:
+## ✨ Features
 
-```sh
-npx create-turbo@latest
-```
+- **Real-time Communication**: WebSocket-powered live updates for trip status, location tracking, and notifications
+- **Dual App Experience**: Separate interfaces for riders (users) and drivers (captains)
+- **Secure Authentication**: JWT-based auth with bcrypt password hashing
+- **Database Management**: Prisma ORM with PostgreSQL for robust data handling
+- **Caching & Performance**: Redis integration for session management and caching
+- **OTP Verification**: Secure trip verification system
+- **Location Services**: Precise GPS tracking with decimal coordinates
+- **Trip Management**: Complete lifecycle from request to completion
+- **Pooling Support**: Capacity-based trip sharing
+- **Modern UI**: React 19 with custom UI components
+- **Type Safety**: Full TypeScript coverage across the stack
 
-## What's inside?
+## 🛠 Tech Stack
 
-This Turborepo includes the following packages/apps:
+### Frontend
 
-### Apps and Packages
+- **Next.js 16** - React framework with App Router
+- **React 19** - Latest React with concurrent features
+- **TypeScript** - Type-safe development
+- **Custom UI Library** - Shared component library
 
-- `docs`: a [Next.js](https://nextjs.org/) app
-- `web`: another [Next.js](https://nextjs.org/) app
-- `@repo/ui`: a stub React component library shared by both `web` and `docs` applications
-- `@repo/eslint-config`: `eslint` configurations (includes `eslint-config-next` and `eslint-config-prettier`)
-- `@repo/typescript-config`: `tsconfig.json`s used throughout the monorepo
+### Backend
 
-Each package/app is 100% [TypeScript](https://www.typescriptlang.org/).
+- **Elysia** - High-performance Bun-based web framework
+- **Prisma** - Next-generation ORM
+- **PostgreSQL** - Robust relational database
+- **Redis** - In-memory data structure store
+- **WebSockets** - Real-time bidirectional communication
 
-### Utilities
+### DevOps & Tools
 
-This Turborepo has some additional tools already setup for you:
+- **Turbo** - High-performance build system for monorepos
+- **Bun** - Fast JavaScript runtime and package manager
+- **ESLint** - Code linting and formatting
+- **Vitest** - Fast unit testing
+- **Prettier** - Code formatting
 
-- [TypeScript](https://www.typescriptlang.org/) for static type checking
-- [ESLint](https://eslint.org/) for code linting
-- [Prettier](https://prettier.io) for code formatting
+## 🚀 Getting Started
 
-### Build
+### Prerequisites
 
-To build all apps and packages, run the following command:
+- **Node.js** 18+
+- **Bun** 1.3.2+
+- **PostgreSQL** database
+- **Redis** server
 
-```
-cd my-turborepo
+### Installation
 
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo build
+1. **Clone the repository**
 
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo build
-yarn dlx turbo build
-pnpm exec turbo build
-```
+   ```bash
+   git clone https://github.com/thetanav/uber.git
+   cd uber
+   ```
 
-You can build a specific package by using a [filter](https://turborepo.com/docs/crafting-your-repository/running-tasks#using-filters):
+2. **Install dependencies**
 
-```
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo build --filter=docs
+   ```bash
+   bun install
+   ```
 
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo build --filter=docs
-yarn exec turbo build --filter=docs
-pnpm exec turbo build --filter=docs
-```
+3. **Set up environment variables**
 
-### Develop
+   Create `.env` files in the following directories:
+   - `apps/server/.env`
+   - `apps/captain/.env` (if needed)
+   - `apps/user/.env` (if needed)
 
-To develop all apps and packages, run the following command:
+   Example `apps/server/.env`:
 
-```
-cd my-turborepo
+   ```env
+   DATABASE_URL="postgresql://username:password@localhost:5432/uber_db"
+   REDIS_URL="redis://localhost:6379"
+   JWT_SECRET="your-super-secret-jwt-key"
+   ```
 
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo dev
+4. **Set up the database**
 
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo dev
-yarn exec turbo dev
-pnpm exec turbo dev
-```
+   ```bash
+   cd apps/server
+   bunx prisma migrate dev
+   bunx prisma generate
+   ```
 
-You can develop a specific package by using a [filter](https://turborepo.com/docs/crafting-your-repository/running-tasks#using-filters):
+5. **Start development servers**
 
-```
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo dev --filter=web
+   ```bash
+   # From project root
+   bun run dev
+   ```
 
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo dev --filter=web
-yarn exec turbo dev --filter=web
-pnpm exec turbo dev --filter=web
-```
+   This will start all apps:
+   - User App: http://localhost:3000
+   - Captain App: http://localhost:3001
+   - Server API: http://localhost:3002 (or configured port)
 
-### Remote Caching
-
-> [!TIP]
-> Vercel Remote Cache is free for all plans. Get started today at [vercel.com](https://vercel.com/signup?/signup?utm_source=remote-cache-sdk&utm_campaign=free_remote_cache).
-
-Turborepo can use a technique known as [Remote Caching](https://turborepo.com/docs/core-concepts/remote-caching) to share cache artifacts across machines, enabling you to share build caches with your team and CI/CD pipelines.
-
-By default, Turborepo will cache locally. To enable Remote Caching you will need an account with Vercel. If you don't have an account you can [create one](https://vercel.com/signup?utm_source=turborepo-examples), then enter the following commands:
-
-```
-cd my-turborepo
-
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo login
-
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo login
-yarn exec turbo login
-pnpm exec turbo login
-```
-
-This will authenticate the Turborepo CLI with your [Vercel account](https://vercel.com/docs/concepts/personal-accounts/overview).
-
-Next, you can link your Turborepo to your Remote Cache by running the following command from the root of your Turborepo:
+## 📁 Project Structure
 
 ```
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo link
-
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo link
-yarn exec turbo link
-pnpm exec turbo link
+uber/
+├── apps/
+│   ├── captain/          # Driver dashboard (Next.js)
+│   ├── server/           # Backend API (Elysia + Prisma)
+│   └── user/             # Rider app (Next.js)
+├── packages/
+│   ├── eslint-config/    # Shared ESLint configurations
+│   ├── typescript-config/# Shared TypeScript configs
+│   └── ui/               # Shared UI components
+├── package.json
+├── turbo.json
+└── README.md
 ```
 
-## Useful Links
+## 🎯 Usage
 
-Learn more about the power of Turborepo:
+### For Riders
 
-- [Tasks](https://turborepo.com/docs/crafting-your-repository/running-tasks)
-- [Caching](https://turborepo.com/docs/crafting-your-repository/caching)
-- [Remote Caching](https://turborepo.com/docs/core-concepts/remote-caching)
-- [Filtering](https://turborepo.com/docs/crafting-your-repository/running-tasks#using-filters)
-- [Configuration Options](https://turborepo.com/docs/reference/configuration)
-- [CLI Usage](https://turborepo.com/docs/reference/command-line-reference)
+1. Sign up/login at http://localhost:3000
+2. Enter trip details (origin, destination, capacity)
+3. Book your ride and track in real-time
+4. Use OTP for secure trip verification
+
+### For Captains
+
+1. Register at http://localhost:3001
+2. Go online and accept ride requests
+3. Navigate to pickup locations
+4. Complete trips and earn
+
+### API Endpoints
+
+- `POST /auth/login` - User/Captain authentication
+- `POST /user/trip` - Create new trip request
+- `GET /captain/trips` - Get available trips
+- `PUT /captain/trip/:id/accept` - Accept a trip
+- `WS /ws` - Real-time updates
+
+## 🧪 Testing
+
+```bash
+bun run test
+```
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch: `git checkout -b feature/amazing-feature`
+3. Commit changes: `git commit -m 'Add amazing feature'`
+4. Push to branch: `git push origin feature/amazing-feature`
+5. Open a Pull Request
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 🙏 Acknowledgments
+
+- Inspired by Uber's seamless ride-sharing experience
+- Built with cutting-edge web technologies
+- Thanks to the open-source community for amazing tools
+
+---
+
+**Happy riding! 🚀**

@@ -66,7 +66,7 @@ const app = new Elysia()
       body: t.Object({
         id: t.String(),
       }),
-    },
+    }
   );
 
 export const userMap = new Map<string, any>();
@@ -77,9 +77,9 @@ export default app;
 
 // Start server if run directly
 if (import.meta.main) {
-  app.listen(process.env.PORT || 3000, () => {
+  app.listen(3002, () => {
     console.log(
-      `🦊 uber backend Elysia is running at ${app.server?.hostname}:${app.server?.port}`,
+      `🦊 uber backend Elysia is running at ${app.server?.hostname}:${app.server?.port}`
     );
   });
 }
