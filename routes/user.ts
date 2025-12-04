@@ -2,11 +2,13 @@ import { Elysia, t, status } from "elysia";
 import { jwtPlugin } from "../lib/jwt";
 import { prisma } from "../lib/prisma";
 import { Decimal } from "decimal.js";
+import { getTripForUser } from "../lib/redis";
+import { userMap } from "../src";
 
 export const user = new Elysia({ prefix: "/user" })
   .use(jwtPlugin)
   .post(
-    "/user/request",
+    "/request",
     async ({ jwt, body, headers: { authorization } }) => {
       const { origin, destination, capacity } = body;
       if (!authorization) return status(401, "Unauthorized");
@@ -56,7 +58,7 @@ export const user = new Elysia({ prefix: "/user" })
     },
   )
   .post(
-    "/master/cancel",
+    "/cancel",
     async ({ jwt, body, headers: { authorization } }) => {
       const { id } = body;
       if (!authorization) return status(401, "Unauthorized");
@@ -95,7 +97,7 @@ export const user = new Elysia({ prefix: "/user" })
         return status(401, "Unauthorized");
       }
 
-      const userId = tripUserMap.get(trip.id);
+      const userId = await getTripForUser(trip.id);
       const wss = userId ? userMap.get(userId) : undefined;
       if (wss) wss.send(JSON.stringify({ type: "CANCELLED" }));
       return { message: "Trip cancelled successfully!" };

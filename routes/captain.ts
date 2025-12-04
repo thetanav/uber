@@ -1,11 +1,13 @@
 import { Elysia, status, t } from "elysia";
 import { jwtPlugin } from "../lib/jwt";
 import { prisma } from "../lib/prisma";
+import { getTripForUser } from "../lib/redis";
+import { userMap } from "../src";
 
 export const captain = new Elysia({ prefix: "/captain" })
   .use(jwtPlugin)
   .post(
-    "/master/cancel",
+    "/cancel",
     async ({ jwt, body, headers: { authorization } }) => {
       const { id } = body;
       if (!authorization) return status(401, "Unauthorized");
@@ -44,7 +46,7 @@ export const captain = new Elysia({ prefix: "/captain" })
         return status(401, "Unauthorized");
       }
 
-      const userId = tripUserMap.get(trip.id);
+      const userId = await getTripForUser(trip.id);
       const wss = userId ? userMap.get(userId) : undefined;
       if (wss) wss.send(JSON.stringify({ type: "CANCELLED" }));
       return { message: "Trip cancelled successfully!" };
@@ -56,7 +58,7 @@ export const captain = new Elysia({ prefix: "/captain" })
     },
   )
   .post(
-    "/captain/pickup",
+    "/pickup",
     async ({ jwt, body, headers: { authorization } }) => {
       // check the trip id and otp of the trip and also the trip has not started also the trip captain is the
       const { id, otp } = body;
@@ -90,7 +92,7 @@ export const captain = new Elysia({ prefix: "/captain" })
         data: { status: "ON_TRIP" },
       });
 
-      const userId = tripUserMap.get(trip.id);
+      const userId = await getTripForUser(trip.id);
       const wss = userId ? userMap.get(userId) : undefined;
       if (wss) wss.send(JSON.stringify({ type: "ON_TRIP" }));
       return { message: "Trip picked up successfully!" };
@@ -103,7 +105,7 @@ export const captain = new Elysia({ prefix: "/captain" })
     },
   )
   .post(
-    "/captain/complete",
+    "/complete",
     async ({ jwt, body, headers: { authorization } }) => {
       const { id } = body;
       if (!authorization) return status(401, "Unauthorized");
@@ -131,7 +133,7 @@ export const captain = new Elysia({ prefix: "/captain" })
         data: { status: "COMPLETED" },
       });
 
-      const userId = tripUserMap.get(trip.id);
+      const userId = await getTripForUser(trip.id);
       const wss = userId ? userMap.get(userId) : undefined;
       if (wss) wss.send(JSON.stringify({ type: "COMPLETED" }));
       return { message: "Trip completed successfully!" };

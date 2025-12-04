@@ -12,7 +12,7 @@ import {
 vi.mock("bcrypt", () => ({
   default: {
     hash: vi.fn().mockResolvedValue("hashed-password"),
-    compare: vi.fn().mockImplementation((password: string, hash: string) => {
+    compare: vi.fn().mockImplementation((password: string) => {
       // For wrong password test, return false
       return Promise.resolve(password === "password123");
     }),
