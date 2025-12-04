@@ -57,25 +57,22 @@ export const ws = new Elysia().ws("/realtime", {
         }
         userMap.set(payload.user, ws);
         ws.send(JSON.stringify({ type: "success", payload: "Listening" }));
-        while (true) {
-          const captainLocation = await getCaptainLocation(trip.captainId!);
-          if (!captainLocation) {
-            ws.send(
-              JSON.stringify({ type: "error", payload: "No location data" }),
-            );
-            return;
-          }
+        const captainLocation = await getCaptainLocation(trip.captainId!);
+        if (!captainLocation) {
           ws.send(
-            JSON.stringify({
-              type: "update",
-              payload: {
-                lat: captainLocation.lat,
-                long: captainLocation.long,
-              },
-            }),
+            JSON.stringify({ type: "error", payload: "No location data" }),
           );
-          await new Promise((resolve) => setTimeout(resolve, 1000));
+          return;
         }
+        ws.send(
+          JSON.stringify({
+            type: "update",
+            payload: {
+              lat: captainLocation.lat,
+              long: captainLocation.long,
+            },
+          }),
+        );
         break;
       case "send:captain":
         // payload { lat, long, tripId }

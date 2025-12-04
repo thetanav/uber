@@ -19,6 +19,22 @@ vi.mock("bcrypt", () => ({
   },
 }));
 
+// Mock ioredis
+vi.mock("ioredis", () => ({
+  default: class {
+    geoadd = vi.fn().mockResolvedValue(1);
+    geopos = vi.fn().mockResolvedValue([["0", "0"]]);
+    geosearch = vi.fn().mockResolvedValue([]);
+    set = vi.fn().mockResolvedValue("OK");
+    get = vi.fn().mockResolvedValue(null);
+  },
+}));
+
+// Mock background
+vi.mock("../lib/background", () => ({
+  poolForCaptains: vi.fn().mockResolvedValue(null),
+}));
+
 // Mock prisma
 vi.mock("../lib/prisma", () => ({
   prisma: {
@@ -29,12 +45,14 @@ vi.mock("../lib/prisma", () => ({
     captain: {
       findUnique: vi.fn(),
       create: vi.fn(),
+      update: vi.fn(),
     },
     trip: {
       create: vi.fn(),
       findUnique: vi.fn(),
       update: vi.fn(),
       deleteMany: vi.fn(),
+      findMany: vi.fn(),
     },
   },
 }));
@@ -50,6 +68,7 @@ const mockCaptainCreate = prisma.captain.create as MockedFunction<any>;
 const mockTripCreate = prisma.trip.create as MockedFunction<any>;
 const mockTripFindUnique = prisma.trip.findUnique as MockedFunction<any>;
 const mockTripUpdate = prisma.trip.update as MockedFunction<any>;
+const mockTripFindMany = prisma.trip.findMany as MockedFunction<any>;
 
 describe("Uber Backend Tests", () => {
   beforeEach(() => {
@@ -106,7 +125,9 @@ describe("Uber Backend Tests", () => {
           }),
         );
 
-        expect(response.status).toBe(500); // Elysia throws error
+        expect(response.status).toBe(409);
+        const data = await response.text();
+        expect(data).toBe("Email already in use");
       });
 
       it("should fail if passwords don't match", async () => {
@@ -123,7 +144,9 @@ describe("Uber Backend Tests", () => {
           }),
         );
 
-        expect(response.status).toBe(500);
+        expect(response.status).toBe(400);
+        const data = await response.text();
+        expect(data).toBe("Passwords do not match");
       });
     });
 
@@ -299,7 +322,7 @@ describe("Uber Backend Tests", () => {
         });
 
         const response = await app.handle(
-          new Request("http://localhost/trip/user/request", {
+          new Request("http://localhost/user/request", {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
@@ -331,7 +354,7 @@ describe("Uber Backend Tests", () => {
 
       it("should fail without auth", async () => {
         const response = await app.handle(
-          new Request("http://localhost/trip/user/request", {
+          new Request("http://localhost/user/request", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -369,7 +392,7 @@ describe("Uber Backend Tests", () => {
         });
 
         const response = await app.handle(
-          new Request("http://localhost/trip/match", {
+          new Request("http://localhost/match", {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
@@ -404,7 +427,7 @@ describe("Uber Backend Tests", () => {
         });
 
         const response = await app.handle(
-          new Request("http://localhost/trip/captain/pickup", {
+          new Request("http://localhost/captain/pickup", {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
@@ -439,7 +462,7 @@ describe("Uber Backend Tests", () => {
         });
 
         const response = await app.handle(
-          new Request("http://localhost/trip/captain/complete", {
+          new Request("http://localhost/captain/complete", {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
@@ -474,7 +497,7 @@ describe("Uber Backend Tests", () => {
         });
 
         const response = await app.handle(
-          new Request("http://localhost/trip/master/cancel", {
+          new Request("http://localhost/user/cancel", {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
@@ -489,6 +512,60 @@ describe("Uber Backend Tests", () => {
         expect(response.status).toBe(200);
         const data = await response.json();
         expect(data.message).toBe("Trip cancelled successfully!");
+      });
+    });
+
+    describe("Trip History", () => {
+      it("should get user trip history", async () => {
+        mockTripFindMany.mockResolvedValue([
+          {
+            id: "trip-id",
+            origin: "Origin",
+            destination: "Destination",
+            status: "COMPLETED",
+            captain: { name: "Captain" },
+          },
+        ]);
+
+        const response = await app.handle(
+          new Request("http://localhost/user/history", {
+            method: "GET",
+            headers: {
+              authorization: userToken,
+            },
+          }),
+        );
+
+        expect(response.status).toBe(200);
+        const data = await response.json();
+        expect(data.trips).toBeDefined();
+        expect(Array.isArray(data.trips)).toBe(true);
+      });
+
+      it("should get captain trip history", async () => {
+        mockTripFindMany.mockResolvedValue([
+          {
+            id: "trip-id",
+            origin: "Origin",
+            destination: "Destination",
+            status: "COMPLETED",
+            user: { name: "User" },
+          },
+        ]);
+
+        const response = await app.handle(
+          new Request("http://localhost/captain/history", {
+            method: "GET",
+            headers: {
+              authorization: captainToken,
+            },
+          }),
+        );
+
+        expect(response.status).toBe(200);
+        const data = await response.json();
+        expect(data.trips).toBeDefined();
+        expect(Array.isArray(data.trips)).toBe(true);
       });
     });
   });

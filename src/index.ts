@@ -65,11 +65,14 @@ const app = new Elysia()
 export const userMap = new Map<string, any>();
 export const captainMap = new Map<string, any>();
 
-app.listen(process.env.PORT || 3000, () => {
-  console.log(
-    `🦊 uber backend Elysia is running at ${app.server?.hostname}:${app.server?.port}`,
-  );
-});
-
 export type App = typeof app;
 export default app;
+
+// Start server if run directly
+if (import.meta.main) {
+  app.listen(process.env.PORT || 3000, () => {
+    console.log(
+      `🦊 uber backend Elysia is running at ${app.server?.hostname}:${app.server?.port}`,
+    );
+  });
+}

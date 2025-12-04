@@ -98,4 +98,23 @@ export const user = new Elysia({ prefix: "/user" })
         id: t.String(),
       }),
     },
-  );
+  )
+  .get("/history", async ({ jwt, headers: { authorization } }) => {
+    if (!authorization) return status(401, "Unauthorized");
+    let payload: any;
+    try {
+      payload = await jwt.verify(authorization);
+    } catch {
+      return status(401, "Unauthorized");
+    }
+
+    if (payload.role !== "user") return status(401, "Unauthorized");
+
+    const trips = await prisma.trip.findMany({
+      where: { userId: payload.user as string },
+      include: { captain: true },
+      orderBy: { createdAt: "desc" },
+    });
+
+    return { trips };
+  });

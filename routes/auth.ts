@@ -7,19 +7,22 @@ export const auth = new Elysia({ prefix: "/auth" })
   .use(jwtPlugin)
   .post(
     "/captain-signup",
-    async ({ body }) => {
+    async (ctx) => {
+      const { body } = ctx;
       const { name, vehicle, capacity, email, password, confirmPassword } =
         body;
       // Validate password and confirmPassword
       if (password !== confirmPassword) {
-        throw new Error("Passwords do not match");
+        ctx.set.status = 400;
+        return "Passwords do not match";
       }
       // Check if email is already in use
       const existingCaptain = await prisma.captain.findUnique({
         where: { email },
       });
       if (existingCaptain) {
-        throw new Error("Email already in use");
+        ctx.set.status = 409;
+        return "Email already in use";
       }
       // Create captain
       await prisma.captain.create({
@@ -46,18 +49,21 @@ export const auth = new Elysia({ prefix: "/auth" })
   )
   .post(
     "/user-signup",
-    async ({ body }) => {
+    async (ctx) => {
+      const { body } = ctx;
       const { name, email, password, confirmPassword } = body;
       // Validate password and confirmPassword
       if (password !== confirmPassword) {
-        throw new Error("Passwords do not match");
+        ctx.set.status = 400;
+        return "Passwords do not match";
       }
       // Check if email is already in use
       const existingUser = await prisma.user.findUnique({
         where: { email },
       });
       if (existingUser) {
-        throw new Error("Email already in use");
+        ctx.set.status = 409;
+        return "Email already in use";
       }
       // Create user
       await prisma.user.create({
