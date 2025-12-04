@@ -8,6 +8,13 @@ import { ws } from "../routes/ws";
 
 const app = new Elysia()
   .use(jwtPlugin)
+  .on("error", ({ code }) => {
+    if (code === "NOT_FOUND") {
+      return "Path not found :(";
+    } else {
+      return "Internal Server Error";
+    }
+  })
   .use(auth)
   .use(user)
   .use(captain)

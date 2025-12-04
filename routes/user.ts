@@ -4,6 +4,7 @@ import { prisma } from "../lib/prisma";
 import { Decimal } from "decimal.js";
 import { getTripForUser } from "../lib/redis";
 import { userMap } from "../src";
+import { poolForCaptains } from "../lib/background";
 
 export const user = new Elysia({ prefix: "/user" })
   .use(jwtPlugin)
@@ -39,6 +40,7 @@ export const user = new Elysia({ prefix: "/user" })
           otp,
         },
       });
+      await poolForCaptains(trip.id, origin.latitude, origin.longitude);
       return { message: "Trip created successfully!", id: trip.id, otp };
     },
     {
@@ -74,18 +76,7 @@ export const user = new Elysia({ prefix: "/user" })
       });
       if (!trip) return { message: "Trip not found!" };
 
-      if (
-        payload.role === "captain" &&
-        trip.captainId === (payload.user as string)
-      ) {
-        await prisma.trip.update({
-          where: { id },
-          data: { status: "CANCELLED" },
-        });
-      } else if (
-        payload.role === "user" &&
-        trip.userId === (payload.user as string)
-      ) {
+      if (payload.role === "user" && trip.userId === (payload.user as string)) {
         if (trip.status === "ACCEPTED") {
           return { message: "Ride has already started!" };
         }

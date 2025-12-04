@@ -67,7 +67,11 @@ model Captain {
   trips      Trip[]
   currentLat Decimal? @db.Decimal(10, 8)
   currentLng Decimal? @db.Decimal(10, 8)
-  isActive   Boolean  @default(false)
+
+  isOnline   Boolean @default(false)
+  inDrive    Boolean @default(false)
+  isPooling  Boolean @default(false)
+  isVerified Boolean @default(false)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

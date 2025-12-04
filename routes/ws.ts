@@ -8,6 +8,7 @@ import {
   saveCaptainLocation,
   getCaptainLocation,
 } from "../lib/redis";
+import { p } from "vitest/dist/chunks/reporters.d.OXEK7y4s";
 
 export const ws = new Elysia().ws("/realtime", {
   async open(ws) {
@@ -118,6 +119,31 @@ export const ws = new Elysia().ws("/realtime", {
           break;
         }
         ws.send(JSON.stringify({ type: "error", payload: "User not found" }));
+        break;
+      case "pool:captain":
+        // captain pools for trips and sends there live location
+        if (
+          ws.info.role !== "captain" ||
+          !payload.lat ||
+          !payload.long ||
+          !payload.tripId
+        ) {
+          ws.send(JSON.stringify({ type: "error", payload: "" }));
+          return;
+        }
+        await prisma.captain.update({
+          where: { id: payload.user },
+          data: {
+            isOnline: true,
+            inDrive: false,
+            isPooling: true,
+            currentLat: payload.lat,
+            currentLng: payload.long,
+          },
+        });
+        // captain send lat and long through the ws
+        // we have to save it
+        await saveCaptainLocation(payload.user, payload.lat, payload.long);
         break;
       default:
         break;

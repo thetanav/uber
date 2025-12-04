@@ -1,5 +1,5 @@
-[ ] Modularize code: Split into controllers, services, middleware.
-[ ] Replace in-memory maps with Redis for state management.
+[x] Modularize code: Split into controllers, services, middleware.
+[x] Replace in-memory maps with Redis for state management.
 [ ] Add error handling, logging, and validation.
 [ ] Implement security: rate limiting, CORS, CSRF, input sanitization.
 [ ] Write comprehensive tests (unit, integration).

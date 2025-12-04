@@ -31,17 +31,6 @@ export const captain = new Elysia({ prefix: "/captain" })
           where: { id },
           data: { status: "CANCELLED" },
         });
-      } else if (
-        payload.role === "user" &&
-        trip.userId === (payload.user as string)
-      ) {
-        if (trip.status === "ACCEPTED") {
-          return { message: "Ride has already started!" };
-        }
-        await prisma.trip.update({
-          where: { id },
-          data: { status: "CANCELLED" },
-        });
       } else {
         return status(401, "Unauthorized");
       }
