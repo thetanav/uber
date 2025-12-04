@@ -1,36 +1,20 @@
 {
-  "name": "uber-backend",
-  "version": "1.0.50",
+  "name": "backend",
+  "private": true,
   "scripts": {
-    "test": "vitest",
-    "dev": "bun run --watch src/index.ts",
-    "lint": "eslint src/**/*.ts test/**/*.ts"
-  },
-  "dependencies": {
-    "@elysiajs/jwt": "^1.4.0",
-    "@elysiajs/websocket": "^0.2.8",
-    "@prisma/adapter-pg": "^7.0.1",
-    "@prisma/client": "^7.0.1",
-    "bcrypt": "^6.0.0",
-    "decimal.js": "^10.6.0",
-    "dotenv": "^17.2.3",
-    "elysia": "latest",
-    "ioredis": "^5.8.2",
-    "jsonwebtoken": "^9.0.2",
-    "prismabox": "^1.1.25"
+    "build": "turbo run build",
+    "dev": "turbo run dev",
+    "lint": "turbo run lint",
+    "format": "prettier --write \"**/*.{ts,tsx,md}\"",
+    "check-types": "turbo run check-types"
   },
   "devDependencies": {
-    "@elysiajs/eden": "^1.4.5",
-    "@types/bcrypt": "^6.0.0",
-    "@types/jsonwebtoken": "^9.0.10",
-    "@typescript-eslint/eslint-plugin": "^8.48.1",
-    "@typescript-eslint/parser": "^8.48.1",
-    "bun-types": "latest",
-    "eslint": "^9.39.1",
-    "prisma": "^7.0.1",
-    "vitest": "^4.0.15",
-    "ws": "^8.18.3"
+    "prettier": "^3.6.2",
+    "turbo": "^2.6.2",
+    "typescript": "5.9.2"
   },
-  "type": "module",
-  "module": "src/index.js"
+  "packageManager": "pnpm@9.0.0",
+  "engines": {
+    "node": ">=18"
+  }
 }
