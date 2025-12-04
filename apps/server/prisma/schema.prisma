@@ -1,0 +1,78 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum TripStatus {
+  REQUESTED
+  ACCEPTED
+  ON_TRIP
+  COMPLETED
+  CANCELLED
+}
+
+model User {
+  id String @id @default(uuid())
+
+  name     String?
+  email    String  @unique
+  password String
+
+  trips Trip[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Trip {
+  id String @id @default(uuid())
+
+  origin      String
+  originLat   Decimal? @db.Decimal(10, 8)
+  originLng   Decimal? @db.Decimal(10, 8)
+  destination String
+  destLat     Decimal? @db.Decimal(10, 8)
+  destLng     Decimal? @db.Decimal(10, 8)
+  capacity    Int
+
+  captain   Captain?   @relation(fields: [captainId], references: [id])
+  captainId String?
+  user      User       @relation(fields: [userId], references: [id])
+  userId    String
+  pricing   Decimal    @db.Decimal(10, 2)
+  status    TripStatus @default(REQUESTED)
+  otp       String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([captainId])
+  @@index([userId])
+  @@index([status])
+}
+
+model Captain {
+  id String @id @default(uuid())
+
+  name     String
+  email    String @unique
+  password String
+
+  vehicle    String?
+  capacity   Int
+  trips      Trip[]
+  currentLat Decimal? @db.Decimal(10, 8)
+  currentLng Decimal? @db.Decimal(10, 8)
+
+  isOnline   Boolean @default(false)
+  inDrive    Boolean @default(false)
+  isPooling  Boolean @default(false)
+  isVerified Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
