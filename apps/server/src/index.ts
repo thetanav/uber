@@ -4,6 +4,7 @@ import { jwtPlugin } from "../lib/jwt";
 import { auth } from "../routes/auth";
 import { user } from "../routes/user";
 import { captain } from "../routes/captain";
+import { swagger } from "@elysiajs/swagger";
 import {
   ws,
   notifyUserTripStatus,
@@ -12,6 +13,20 @@ import {
 
 const app = new Elysia()
   .use(jwtPlugin)
+  .use(
+    swagger({
+      // optional: change the path
+      path: "/swagger",
+      // optional: change metadata
+      documentation: {
+        info: {
+          title: "My Uber Clone API",
+          version: "1.0.0",
+          description: "API docs for my ride app",
+        },
+      },
+    })
+  )
   .on("error", ({ code }) => {
     if (code === "NOT_FOUND") {
       return "Path not found :(";
@@ -23,6 +38,7 @@ const app = new Elysia()
   .use(user)
   .use(captain)
   .use(ws)
+  .get("/", () => "Welcome to Uber Backend!")
   .post(
     "/match",
     async ({ jwt, body, headers: { authorization } }) => {
@@ -76,10 +92,9 @@ export type App = typeof app;
 export default app;
 
 // Start server if run directly
-if (import.meta.main) {
-  app.listen(3002, () => {
-    console.log(
-      `🦊 uber backend Elysia is running at ${app.server?.hostname}:${app.server?.port}`
-    );
-  });
-}
+
+app.listen(3002, () => {
+  console.log(
+    `🦊 uber backend Elysia is running at ${app.server?.hostname}:${app.server?.port}`
+  );
+});
