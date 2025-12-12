@@ -10,8 +10,10 @@ import {
   notifyUserTripStatus,
   notifyCaptainTripStatus,
 } from "../routes/ws";
+import { cors } from "@elysiajs/cors";
 
 const app = new Elysia()
+  .use(cors())
   .use(jwtPlugin)
   .use(
     swagger({

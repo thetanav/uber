@@ -85,7 +85,7 @@ export const auth = new Elysia({ prefix: "/auth" })
     }
   )
   .post(
-    "/uesr/login",
+    "/user/login",
     async ({ jwt, body }) => {
       const { email, password } = body;
       const user = await prisma.user.findUnique({
