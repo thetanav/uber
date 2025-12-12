@@ -1,5 +1,5 @@
 {
-  "name": "backend",
+  "name": "uber",
   "private": true,
   "scripts": {
     "build": "turbo run build",
