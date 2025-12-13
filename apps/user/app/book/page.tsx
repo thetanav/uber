@@ -14,6 +14,7 @@ import { LocationEdit } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import dynamic from "next/dynamic";
+import UserInfo from "@/components/user";
 
 const Map = dynamic(() => import("@/components/map"), { ssr: false });
 
@@ -45,6 +46,9 @@ export default function Book() {
     <Card className="max-w-xl mx-auto mt-4">
       <CardHeader className="text-xl font-bold">Plan your ride</CardHeader>
       <CardContent>
+        <div>
+          <UserInfo />
+        </div>
         <div className="space-y-1">
           <div className="flex gap-2">
             <Input type="text" placeholder="Enter pickup location" />

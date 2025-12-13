@@ -1,26 +1,46 @@
 import { Elysia, t, status } from "elysia";
-import { jwtPlugin } from "../lib/jwt";
 import { prisma } from "../lib/prisma";
 import { Decimal } from "decimal.js";
 import { poolForCaptains } from "../lib/background";
 import { notifyCaptainTripStatus } from "./ws";
+import { jwtPlugin } from "../lib/jwt";
 
 export const user = new Elysia({ prefix: "/user" })
   .use(jwtPlugin)
+  .derive(async ({ jwt, cookie, headers, set }) => {
+    const token = cookie.auth?.value || headers.authorization;
+
+    if (!token) {
+      set.status = 401;
+      throw new Error("Unauthorized");
+    }
+
+    try {
+      const payload = await jwt.verify(token as string);
+      if (!payload || payload.role !== "user") throw new Error("Invalid token");
+      return { payload };
+    } catch {
+      set.status = 401;
+      throw new Error("Invalid token");
+    }
+  })
+  .post("/info", async ({ body, payload }) => {
+    const user = await prisma.user.findUnique({
+      where: { id: payload.user },
+    });
+    if (!user) return status(401, "Unauthorized");
+    return { name: user.name, email: user.email, createdAt: user.createdAt };
+  })
+  .post("/logout", ({ cookie }) => {
+    cookie.auth.remove();
+    return { success: true };
+  })
   .post(
     "/request",
-    async ({ jwt, body, headers: { authorization } }) => {
+    async ({ body, payload }) => {
       const { origin, destination, capacity } = body;
-      if (!authorization) return status(401, "Unauthorized");
-      let payload: any;
-      try {
-        payload = await jwt.verify(authorization);
-      } catch {
-        return status(401, "Unauthorized");
-      }
-
       const user = await prisma.user.findUnique({
-        where: { id: payload.user as string },
+        where: { id: payload.user },
       });
       if (!user) return status(401, "Unauthorized");
       const otp = Math.floor(1000 + Math.random() * 9000).toString();
@@ -56,26 +76,19 @@ export const user = new Elysia({ prefix: "/user" })
         }),
         capacity: t.Number(),
       }),
-    },
+    }
   )
   .post(
     "/cancel",
-    async ({ jwt, body, headers: { authorization } }) => {
+    async ({ body, payload }) => {
       const { id } = body;
-      if (!authorization) return status(401, "Unauthorized");
-      let payload: any;
-      try {
-        payload = await jwt.verify(authorization);
-      } catch {
-        return status(401, "Unauthorized");
-      }
 
       const trip = await prisma.trip.findUnique({
         where: { id },
       });
       if (!trip) return { message: "Trip not found!" };
 
-      if (payload.role === "user" && trip.userId === (payload.user as string)) {
+      if (payload.role === "user" && trip.userId === payload.user) {
         if (trip.status === "ACCEPTED") {
           return { message: "Ride has already started!" };
         }
@@ -97,21 +110,13 @@ export const user = new Elysia({ prefix: "/user" })
       body: t.Object({
         id: t.String(),
       }),
-    },
-  )
-  .get("/history", async ({ jwt, headers: { authorization } }) => {
-    if (!authorization) return status(401, "Unauthorized");
-    let payload: any;
-    try {
-      payload = await jwt.verify(authorization);
-    } catch {
-      return status(401, "Unauthorized");
     }
-
+  )
+  .get("/history", async ({ payload }) => {
     if (payload.role !== "user") return status(401, "Unauthorized");
 
     const trips = await prisma.trip.findMany({
-      where: { userId: payload.user as string },
+      where: { userId: payload.user },
       include: { captain: true },
       orderBy: { createdAt: "desc" },
     });

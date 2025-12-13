@@ -1,4 +1,4 @@
-import { Elysia, t } from "elysia";
+import { Elysia, status, t } from "elysia";
 import { prisma } from "../lib/prisma";
 import bcrypt from "bcrypt";
 import { jwtPlugin } from "../lib/jwt";
@@ -7,22 +7,19 @@ export const auth = new Elysia({ prefix: "/auth" })
   .use(jwtPlugin)
   .post(
     "/captain/signup",
-    async (ctx) => {
-      const { body } = ctx;
+    async ({ body }) => {
       const { name, vehicle, capacity, email, password, confirmPassword } =
         body;
       // Validate password and confirmPassword
       if (password !== confirmPassword) {
-        ctx.set.status = 400;
-        return "Passwords do not match";
+        return status(400, { message: "Passwords do not match" });
       }
       // Check if email is already in use
       const existingCaptain = await prisma.captain.findUnique({
         where: { email },
       });
       if (existingCaptain) {
-        ctx.set.status = 409;
-        return "Email already in use";
+        return status(409, { message: "Email already in use" });
       }
       // Create captain
       await prisma.captain.create({
@@ -49,21 +46,18 @@ export const auth = new Elysia({ prefix: "/auth" })
   )
   .post(
     "/user/signup",
-    async (ctx) => {
-      const { body } = ctx;
+    async ({ body }) => {
       const { name, email, password, confirmPassword } = body;
       // Validate password and confirmPassword
       if (password !== confirmPassword) {
-        ctx.set.status = 400;
-        return "Passwords do not match";
+        return status(400, { message: "Passwords do not match" });
       }
       // Check if email is already in use
       const existingUser = await prisma.user.findUnique({
         where: { email },
       });
       if (existingUser) {
-        ctx.set.status = 409;
-        return "Email already in use";
+        return status(409, { message: "Email already in use" });
       }
       // Create user
       await prisma.user.create({
@@ -86,14 +80,24 @@ export const auth = new Elysia({ prefix: "/auth" })
   )
   .post(
     "/user/login",
-    async ({ jwt, body }) => {
+    async ({ jwt, body, cookie }) => {
       const { email, password } = body;
       const user = await prisma.user.findUnique({
         where: { email },
       });
-      if (user && (await bcrypt.compare(password, user.password)))
-        return jwt.sign({ user: user.id, role: "user" });
-      return { message: "Login unsuccessful!" };
+      if (user && (user.password = password)) {
+        const token = await jwt.sign({ user: user.id, role: "user" });
+        console.log("token generated", token);
+        cookie.auth.set({
+          value: token,
+          httpOnly: true,
+          sameSite: "lax",
+          secure: false,
+          path: "/",
+        });
+        return status(200, { message: "Login successful!" });
+      }
+      return status(401, { message: "Login unsuccessful!" });
     },
     {
       body: t.Object({

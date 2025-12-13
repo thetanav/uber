@@ -1,9 +1,7 @@
 import { Elysia, status, t } from "elysia";
 import { prisma } from "../lib/prisma";
-import { jwtPlugin } from "../lib/jwt";
 import { auth } from "../routes/auth";
 import { user } from "../routes/user";
-import { captain } from "../routes/captain";
 import { swagger } from "@elysiajs/swagger";
 import {
   ws,
@@ -11,10 +9,22 @@ import {
   notifyCaptainTripStatus,
 } from "../routes/ws";
 import { cors } from "@elysiajs/cors";
+import { captain } from "../routes/captain";
 
-const app = new Elysia()
-  .use(cors())
-  .use(jwtPlugin)
+const app = new Elysia({
+  cookie: {
+    httpOnly: true,
+    sameSite: "lax",
+    secure: false, // TODO: true in production (https)
+    path: "/",
+  },
+})
+  .use(
+    cors({
+      origin: ["http://localhost:3000", "http://localhost:3001"], // exact frontend origin
+      credentials: true,
+    })
+  )
   .use(
     swagger({
       // optional: change the path
@@ -29,63 +39,18 @@ const app = new Elysia()
       },
     })
   )
-  .on("error", ({ code }) => {
+  .on("error", ({ code, error }) => {
     if (code === "NOT_FOUND") {
       return "Path not found :(";
     } else {
-      return "Internal Server Error";
+      return error;
     }
   })
+  .get("/", () => "Welcome to Uber Backend!")
   .use(auth)
   .use(user)
   .use(captain)
-  .use(ws)
-  .get("/", () => "Welcome to Uber Backend!")
-  .post(
-    "/match",
-    async ({ jwt, body, headers: { authorization } }) => {
-      const { id } = body;
-      if (!authorization) return status(401, "Unauthorized");
-      let payload: any;
-      try {
-        payload = await jwt.verify(authorization);
-      } catch {
-        return status(401, "Unauthorized");
-      }
-
-      const captain = await prisma.captain.findUnique({
-        where: { id: payload.user as string },
-      });
-      if (!captain) return status(401, "Unauthorized");
-
-      const trip = await prisma.trip.findUnique({
-        where: { id },
-      });
-      if (!trip) return { message: "Trip not found!" };
-
-      if (payload.role === "captain" && trip.status === "REQUESTED") {
-        await prisma.trip.update({
-          where: { id },
-          data: {
-            status: "ACCEPTED",
-            captain: { connect: { id: captain.id } },
-          },
-        });
-        // Notify user and captain
-        notifyUserTripStatus(trip.userId, trip.id, "ACCEPTED");
-        notifyCaptainTripStatus(captain.id, trip.id, "ACCEPTED");
-      } else {
-        return status(401, "Unauthorized");
-      }
-
-      return { message: "Trip matched successfully!", tripid: trip.id };
-    },
-    {
-      body: t.Object({
-        id: t.String(),
-      }),
-    }
-  );
+  .use(ws);
 
 export const userMap = new Map<string, any>();
 export const captainMap = new Map<string, any>();
