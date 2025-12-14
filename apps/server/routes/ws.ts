@@ -2,9 +2,9 @@ import { Elysia } from "elysia";
 import { prisma } from "../lib/prisma";
 import { userMap, captainMap } from "../src";
 import {
-  getTripForUser,
   saveCaptainLocation,
   getCaptainLocation,
+  getUserFromTrip,
 } from "../lib/redis";
 import { jwtPlugin } from "../lib/jwt";
 import { cookie } from "@elysiajs/cookie";
@@ -79,6 +79,8 @@ export const ws = new Elysia()
         case "subscribe:trip":
           // payload { tripId }
           // user subscribes to trip updates (location and status) after requesting
+          if (ws.data.info.role == "user") return;
+
           const trip = await prisma.trip.findUnique({
             where: { id: payload.tripId },
             include: { captain: true },
@@ -94,13 +96,8 @@ export const ws = new Elysia()
             return;
           }
 
-          userMap.set((ws.data as any).user, ws);
-          ws.send(
-            JSON.stringify({
-              type: "subscribed",
-              payload: { tripId: trip.id, status: trip.status },
-            })
-          );
+          userMap.set(ws.data.info.user, ws);
+
           // Send initial captain location if available
           if (trip.captainId && trip.status === "ACCEPTED") {
             const captainLocation = await getCaptainLocation(trip.captainId);
@@ -117,10 +114,17 @@ export const ws = new Elysia()
               );
             }
           }
+
+          ws.send(
+            JSON.stringify({
+              type: "subscribed",
+              payload: { tripId: trip.id, status: trip.status },
+            })
+          );
           break;
         case "send:location":
           // payload { lat, long, tripId? }
-          // captain sends location
+          // captain sends location for pooling or in drive
           if (ws.data.info.role == "user") return;
           if (!payload.lat || !payload.long) {
             ws.send(

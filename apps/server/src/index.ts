@@ -52,6 +52,7 @@ const app = new Elysia({
   .use(captain)
   .use(ws);
 
+// userId, socket
 export const userMap = new Map<string, any>();
 export const captainMap = new Map<string, any>();
 
