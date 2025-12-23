@@ -1,25 +1,25 @@
 import { prisma } from "../lib/prisma";
 import { redis } from "../lib/redis";
 import { Captain } from "../generated/prisma/client";
+import { notifyUserTripStatus } from "../routes/ws";
 
-export const poolForCaptains = async (
+export const firstCaptain = async (
+  userId: string,
   tripId: string,
   lat: number,
-  long: number,
+  long: number
 ) => {
-  // find available captains
-  // send to the captain
-  // TODO: Fix the bugs
+  // find the first available captian and match with the trip
   const captains = await redis.geosearch(
     "captain:locations",
     long,
     lat,
-    1000,
+    2000,
     "m",
     "WITHCOORD",
     "COUNT",
-    20,
-    "ASC",
+    10,
+    "ASC"
   );
   let finalCaptain: Captain | null = null;
 
@@ -28,11 +28,25 @@ export const poolForCaptains = async (
       where: { id: cap[0] },
     });
     if (!captain) continue;
+    // check captain is available for trip
     if (captain.isOnline && captain.isPooling && !captain.inDrive) {
       finalCaptain = captain;
       break; // Take the first available (closest)
     }
   }
-  if (!finalCaptain) return null;
+
+  if (finalCaptain) {
+    await prisma.captain.update({
+      where: { id: finalCaptain.id },
+      data: { inDrive: true, isPooling: false },
+    });
+    await prisma.trip.update({
+      where: { id: tripId },
+      data: { captainId: finalCaptain.id },
+    });
+    // send update to user that captain is found
+    notifyUserTripStatus(userId, tripId, "CAPTAIN_FOUND");
+  }
+
   return finalCaptain;
 };

@@ -1,7 +1,7 @@
 import { Elysia, t, status } from "elysia";
 import { prisma } from "../lib/prisma";
 import { Decimal } from "decimal.js";
-import { poolForCaptains } from "../lib/background";
+import { firstCaptain } from "../lib/background";
 import { notifyCaptainTripStatus } from "./ws";
 import { jwtPlugin } from "../lib/jwt";
 
@@ -63,6 +63,13 @@ export const user = new Elysia({ prefix: "/user" })
           otp,
         },
       });
+
+      await firstCaptain(
+        trip.userId,
+        trip.id,
+        origin.latitude,
+        origin.longitude
+      );
 
       return status(200, {
         id: trip.id,

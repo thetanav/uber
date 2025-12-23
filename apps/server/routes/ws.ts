@@ -7,7 +7,6 @@ import {
   getUserFromTrip,
 } from "../lib/redis";
 import { jwtPlugin } from "../lib/jwt";
-import { cookie } from "@elysiajs/cookie";
 
 // Notification functions for trip status updates
 export const notifyUserTripStatus = (
