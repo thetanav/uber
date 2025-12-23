@@ -149,27 +149,10 @@ export default function RideDetails() {
   }
 
   if (!trip) {
-    return (
-      <Card className="max-w-xl mx-auto mt-4">
-        <CardHeader>
-          <CardTitle>Ride Not Found</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p>
-            The ride you're looking for doesn't exist or you don't have
-            permission to view it.
-          </p>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  const canShowMap =
-    trip.originLat && trip.originLng && trip.destLat && trip.destLng;
-
   return (
-    <div className="max-w-4xl mx-auto mt-4 space-y-4">
-      <Card>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
+      <div className="max-w-4xl mx-auto mt-4 space-y-4">
+        <Card>
         <CardHeader>
           <CardTitle className="flex items-center justify-between">
             <span>Ride Details</span>
@@ -310,6 +293,7 @@ export default function RideDetails() {
           )}
         </CardContent>
       </Card>
+      </div>
     </div>
   );
 }

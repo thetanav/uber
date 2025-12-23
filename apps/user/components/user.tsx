@@ -7,7 +7,7 @@ export function useUser() {
   return useQuery({
     queryKey: ["user-info"],
     queryFn: async () => {
-      const res = await api.user.info.post({});
+      const res = await api.user.get();
       if (res.status === 200) {
         return res.data;
       } else {
@@ -20,10 +20,11 @@ export function useUser() {
 export default function UserInfo() {
   const { data } = useUser();
 
+  if (!data) return null;
+
   return (
-    <span className="inline-flex gap-2 mb-2">
-      You are {data?.name && <div>{data.name}</div>} and email
-      {data?.email && <div>{data.email}</div>}
-    </span>
+    <div className="text-sm text-muted-foreground mb-4">
+      Welcome, {data.name}! ({data.email})
+    </div>
   );
 }

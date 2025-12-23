@@ -8,8 +8,8 @@ import { jwtPlugin } from "../lib/jwt";
 export const user = new Elysia({ prefix: "/user" })
   .use(jwtPlugin)
   .derive(async ({ jwt, cookie, headers, set }) => {
-    const token = cookie.auth?.value || headers.authorization;
-
+    const token = cookie.auth?.value;
+    console.log("token", token);
     if (!token) {
       set.status = 401;
       throw new Error("Unauthorized");
@@ -17,6 +17,7 @@ export const user = new Elysia({ prefix: "/user" })
 
     try {
       const payload = await jwt.verify(token as string);
+      console.log("payload", payload);
       if (!payload || payload.role !== "user") throw new Error("Invalid token");
       return { payload };
     } catch {
@@ -24,7 +25,10 @@ export const user = new Elysia({ prefix: "/user" })
       throw new Error("Invalid token");
     }
   })
-  .post("/info", async ({ body, payload }) => {
+  .get("/verify", async ({ payload }) => {
+    return "ok";
+  })
+  .get("/", async ({ payload }) => {
     const user = await prisma.user.findUnique({
       where: { id: payload.user },
     });

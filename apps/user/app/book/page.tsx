@@ -7,16 +7,17 @@ import {
   CardContent,
   CardFooter,
   CardHeader,
+  CardTitle,
 } from "@/components/ui/card";
-import api from "@repo/eden";
 import { useMutation } from "@tanstack/react-query";
-import { Loader2, LocationEdit, MapPin, Navigation } from "lucide-react";
+import { LocationEdit, MapPin, Navigation } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import dynamic from "next/dynamic";
 import UserInfo from "@/components/user";
 import { LocationDialog } from "@/components/location-picker";
-import { Router } from "next/router";
+import { MButton } from "@/components/mutation-button";
+import api from "@repo/eden";
 
 const Map = dynamic(() => import("@/components/map"), { ssr: true });
 
@@ -56,7 +57,7 @@ export default function Book() {
     );
   }, []);
 
-  const { mutate: requestTrip, isPending } = useMutation({
+  const mutation = useMutation({
     mutationFn: async () => {
       console.log(origin, destination);
       const res = await api.user.request.post({
@@ -72,135 +73,129 @@ export default function Book() {
     },
   });
   return (
-    <Card className="max-w-xl mx-auto mt-4">
-      <CardHeader className="text-xl font-bold">Plan your ride</CardHeader>
-      <CardContent>
-        <div>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
+      <Card className="max-w-xl mx-auto mt-4">
+        <CardHeader>
+          <CardTitle>Plan your ride</CardTitle>
+        </CardHeader>
+        <CardContent>
           <UserInfo />
-          {origin && origin?.longitude}
-        </div>
 
-        <div className="divide-y-2 border-2  rounded-lg shadow">
-          <div className="flex gap-2 items-center justify-center px-2">
-            <MapPin />
-            <input
-              type="text"
-              placeholder="From Where?"
-              value={origin?.name}
-              className="outline-none px-2 py-1 w-full text-ellipsis"
-            />
-            <Button
-              variant={"ghost"}
-              onClick={() => {
-                setOpen(true);
-                setChoose(true);
-              }}>
-              <LocationEdit />
-            </Button>
+          <div className="divide-y border rounded-lg shadow-sm">
+            <div className="flex gap-2 items-center justify-center px-2">
+              <MapPin />
+              <input
+                className="px-2 py-1 w-full text-ellipsis"
+                placeholder="From Where?"
+                value={origin?.name}
+                readOnly
+              />
+              <Button
+                variant={"ghost"}
+                onClick={() => {
+                  setOpen(true);
+                  setChoose(true);
+                }}>
+                <LocationEdit />
+              </Button>
+            </div>
+            <div className="flex gap-2 items-center justify-center px-2">
+              <Navigation />
+              <input
+                placeholder="Where to?"
+                value={destination?.name}
+                readOnly
+                className="px-2 py-1 w-full text-ellipsis"
+              />
+              <Button
+                variant={"ghost"}
+                onClick={() => {
+                  setOpen(true);
+                  setChoose(false);
+                }}>
+                <LocationEdit />
+              </Button>
+            </div>
           </div>
-          <div className="flex gap-2 items-center justify-center px-2">
-            <Navigation />
-            <input
-              type="text"
-              placeholder="Where to?"
-              value={destination?.name}
-              className="outline-none px-2 py-1 w-full text-ellipsis"
-            />
-            <Button
-              variant={"ghost"}
-              onClick={() => {
-                setOpen(true);
-                setChoose(false);
-              }}>
-              <LocationEdit />
-            </Button>
-          </div>
-        </div>
 
-        <LocationDialog
-          origin={origin}
-          open={open}
-          onClose={() => setOpen(false)}
-          setOrigin={setOrigin}
-          setDestination={setDestination}
-          choose={choose}
-        />
-        {origin && destination && (
-          <div className="mt-8 border rounded-lg overflow-hidden">
-            <Map
-              from={[origin.latitude, origin.longitude]}
-              to={[destination.latitude, destination.longitude]}
-            />
+          <LocationDialog
+            origin={origin}
+            open={open}
+            onClose={() => setOpen(false)}
+            setOrigin={setOrigin}
+            setDestination={setDestination}
+            choose={choose}
+          />
+          {origin && destination && (
+            <div className="mt-8 border rounded-lg overflow-hidden">
+              <Map
+                from={[origin.latitude, origin.longitude]}
+                to={[destination.latitude, destination.longitude]}
+              />
+            </div>
+          )}
+          <div className="mt-8">
+            <h3 className="text-xl font-bold mb-3">Choose a Ride</h3>
+            <div className="space-y-2">
+              <VehicleSelect
+                capacity={1}
+                src="https://img.icons8.com/ios-filled/100/motorcycle.png"
+                name="Bike"
+                select={select}
+                setSelect={setSelect}
+              />
+              <VehicleSelect
+                capacity={2}
+                src="https://img.icons8.com/ios-filled/100/fiat-500.png"
+                name="Auto"
+                select={select}
+                setSelect={setSelect}
+              />
+              <VehicleSelect
+                capacity={3}
+                src="https://img.icons8.com/ios-filled/100/hatchback.png"
+                name="Hatchback"
+                select={select}
+                setSelect={setSelect}
+              />
+              <VehicleSelect
+                capacity={4}
+                src="https://img.icons8.com/ios-filled/100/sedan.png"
+                name="Sedan"
+                select={select}
+                setSelect={setSelect}
+              />
+            </div>
           </div>
-        )}
-        <div className="mt-8">
-          <h3 className="text-xl font-bold mb-3">Choose a Ride</h3>
-          <div className="space-y-2">
-            <VehicleSelect
-              capacity={1}
-              src="https://img.icons8.com/ios-filled/100/motorcycle.png"
-              name="Bike"
-              select={select}
-              setSelect={setSelect}
-            />
-            <VehicleSelect
-              capacity={2}
-              src="https://img.icons8.com/ios-filled/100/fiat-500.png
-"
-              name="Auto"
-              select={select}
-              setSelect={setSelect}
-            />
-            <VehicleSelect
-              capacity={3}
-              src="https://img.icons8.com/ios-filled/100/hatchback.png"
-              name="Hatchback"
-              select={select}
-              setSelect={setSelect}
-            />
-            <VehicleSelect
-              capacity={4}
-              src="https://img.icons8.com/ios-filled/100/sedan.png"
-              name="Sedan"
-              select={select}
-              setSelect={setSelect}
-            />
-          </div>
-        </div>
-      </CardContent>
-      <CardFooter>
-        <Button disabled={isPending} onClick={() => requestTrip()}>
-          {isPending && <Loader2 className="animate-spin" />}
-          Find Drivers
-        </Button>
-      </CardFooter>
-    </Card>
+        </CardContent>
+        <CardFooter>
+          <MButton mutation={mutation}>Find Drivers</MButton>
+        </CardFooter>
+      </Card>
+    </div>
   );
 }
 
-const VehicleSelect = ({
-  src,
-  name,
-  price,
-  select,
-  setSelect,
-  capacity,
-}: any) => {
+const VehicleSelect = ({ src, name, select, setSelect, capacity }: any) => {
   return (
-    <div
-      className={`border p-3 rounded-md shadow flex transition cursor-pointer gap-3 ${select == capacity && "ring-3 ring-primary/50 bg-accent"}`}
+    <Card
+      className={`cursor-pointer transition-all hover:shadow-md ${select == capacity ? "ring-2 ring-primary bg-accent" : ""}`}
       onClick={() => setSelect(capacity)}>
-      <img
-        src={src}
-        className="p-2 w-12 h-12 bg-blue-200 rounded-xl select-none pointer-events-none"
-      />
-      <div className="flex-2">
-        <h4 className="text-lg">{name}</h4>
-        <p>Capacity: {capacity}</p>
-      </div>
-      <div className="flex items-center justify-center">
-        <p className="text-green-600 text-lg font-bold">₹{price}</p>
-      </div>
-    </div>
+      <CardContent className="p-4">
+        <div className="flex items-center gap-3">
+          <img
+            src={src}
+            className="w-12 h-12 rounded-lg bg-blue-100 p-2"
+            alt={name}
+          />
+          <div className="flex-1">
+            <h4 className="font-semibold">{name}</h4>
+            <p className="text-sm text-muted-foreground">
+              Capacity: {capacity}
+            </p>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
   );
 };

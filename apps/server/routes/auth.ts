@@ -126,6 +126,10 @@ export const auth = new Elysia({ prefix: "/auth" })
       }),
     }
   )
+  .get("/logout", ({ cookie }) => {
+    cookie.auth.remove();
+    return { success: true };
+  })
   .post(
     "/forgot",
     async ({ body }) => {

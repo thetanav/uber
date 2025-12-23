@@ -1,32 +1,30 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import api from "@repo/eden";
 import { useMutation } from "@tanstack/react-query";
-import { Loader2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import Link from "next/link";
 import { MButton } from "@/components/mutation-button";
+import api from "@repo/eden";
+import { useRouter } from "next/navigation";
 
-export default function Signup() {
+export default function Login() {
+  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [name, setName] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
 
   const mutation = useMutation({
     mutationFn: async () => {
-      const res = await api.auth.user.signup.post({
+      const res = await api.auth.user.login.post({
         email,
-        name,
         password,
-        confirmPassword,
       });
       if (res.status === 200) {
-        toast.success("Signup Successful");
+        toast.success("Signin Successful");
+        router.push("/");
+        localStorage.setItem("token", res.data?.token!);
       } else {
         toast.error("Invalid credentials");
       }
@@ -37,14 +35,9 @@ export default function Signup() {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <CardTitle className="text-2xl">Sign Up</CardTitle>
+          <CardTitle className="text-2xl">Login</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <Input
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="Name"
-          />
           <Input
             value={email}
             onChange={(e) => setEmail(e.target.value)}
@@ -56,19 +49,19 @@ export default function Signup() {
             type="password"
             placeholder="Password"
           />
-          <Input
-            value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
-            type="password"
-            placeholder="Confirm Password"
-          />
+          <div className="text-center text-sm">
+            Forgot password{" "}
+            <Link href="/auth/signup" className="text-primary hover:underline">
+              reset?
+            </Link>
+          </div>
           <MButton mutation={mutation} className="w-full">
-            Sign Up
+            Login
           </MButton>
           <div className="text-center text-sm">
-            Already have an account?{" "}
-            <Link href="/auth/login" className="text-primary hover:underline">
-              Login
+            Don't have an account?{" "}
+            <Link href="/auth/signup" className="text-primary hover:underline">
+              Sign up
             </Link>
           </div>
         </CardContent>
