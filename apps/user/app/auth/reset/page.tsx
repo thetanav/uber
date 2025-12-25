@@ -1,7 +1,7 @@
 "use client";
 
 import { Input } from "@/components/ui/input";
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import { useQueryState } from "nuqs";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,7 +11,7 @@ import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import api from "@repo/eden";
 
-export default function Reset() {
+function ResetForm() {
   const router = useRouter();
   const [newPassword, setNewPassword] = useState("");
   const [token] = useQueryState("token");
@@ -26,7 +26,7 @@ export default function Reset() {
           query: {
             token,
           },
-        }
+        },
       );
       if (res.status === 200) {
         toast.success("Password updated successfully");
@@ -53,12 +53,27 @@ export default function Reset() {
           <Button
             onClick={() => mutate()}
             className="w-full"
-            disabled={isPending}>
+            disabled={isPending}
+          >
             {isPending ? <Loader2 className="animate-spin" /> : null}
             Reset Password
           </Button>
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+export default function Reset() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex items-center justify-center min-h-screen">
+          <Loader2 className="animate-spin" />
+        </div>
+      }
+    >
+      <ResetForm />
+    </Suspense>
   );
 }

@@ -1,0 +1,6 @@
+{
+  "buildCommand": "cd ../.. && turbo run build --filter=captain-app",
+  "installCommand": "bun install",
+  "framework": "nextjs",
+  "outputDirectory": ".next"
+}

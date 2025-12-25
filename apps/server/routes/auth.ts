@@ -44,7 +44,7 @@ export const auth = new Elysia({ prefix: "/auth" })
         password: t.String(),
         confirmPassword: t.String(),
       }),
-    }
+    },
   )
   .post(
     "/user/signup",
@@ -78,7 +78,7 @@ export const auth = new Elysia({ prefix: "/auth" })
         password: t.String(),
         confirmPassword: t.String(),
       }),
-    }
+    },
   )
   .post(
     "/user/login",
@@ -90,7 +90,7 @@ export const auth = new Elysia({ prefix: "/auth" })
       if (user && (await bcrypt.compare(password, user.password))) {
         const token = await jwt.sign({ user: user.id, role: "user" });
         console.log("token generated", token);
-        cookie.auth.set({
+        cookie.auth?.set({
           value: token,
           httpOnly: true,
           sameSite: "lax",
@@ -106,7 +106,7 @@ export const auth = new Elysia({ prefix: "/auth" })
         email: t.String({ format: "email" }),
         password: t.String(),
       }),
-    }
+    },
   )
   .post(
     "/captain/login",
@@ -124,10 +124,10 @@ export const auth = new Elysia({ prefix: "/auth" })
         email: t.String({ format: "email" }),
         password: t.String(),
       }),
-    }
+    },
   )
   .get("/logout", ({ cookie }) => {
-    cookie.auth.remove();
+    cookie.auth?.remove();
     return { success: true };
   })
   .post(
@@ -152,7 +152,7 @@ export const auth = new Elysia({ prefix: "/auth" })
       body: t.Object({
         email: t.String({ format: "email" }),
       }),
-    }
+    },
   )
   .post(
     "/reset",
@@ -179,5 +179,5 @@ export const auth = new Elysia({ prefix: "/auth" })
       body: t.Object({
         password: t.String(),
       }),
-    }
+    },
   );

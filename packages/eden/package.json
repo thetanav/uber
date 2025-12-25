@@ -8,10 +8,12 @@
   },
   "scripts": {
     "lint": "eslint . --max-warnings 0",
-    "build": "bun build"
+    "build": "echo 'No build needed for TypeScript source'",
+    "check-types": "tsc --noEmit"
   },
   "devDependencies": {
-    "@types/bun": "latest"
+    "@types/bun": "latest",
+    "typescript": "5.9.2"
   },
   "peerDependencies": {
     "typescript": "^5"
