@@ -17,9 +17,10 @@ export default function Login() {
 
   const mutation = useMutation({
     mutationFn: async () => {
-      const res = await api.auth.user.login.post({
+      const res = await api.auth.signin.post({
         email,
         password,
+        role: "user",
       });
       if (res.status === 200) {
         toast.success("Signin Successful");

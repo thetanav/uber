@@ -122,7 +122,6 @@ export const user = new Elysia({ prefix: "/user" })
           where: { id },
           data: { status: "CANCELLED" },
         });
-        // Captain will get update via polling
       } else {
         return status(401, "Unauthorized");
       }

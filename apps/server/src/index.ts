@@ -16,9 +16,8 @@ const app = new Elysia({
 })
   .use(
     cors({
-      // exact frontend origin
       credentials: true,
-    }),
+    })
   )
   .use(
     swagger({
@@ -32,7 +31,7 @@ const app = new Elysia({
           description: "API docs for my ride app",
         },
       },
-    }),
+    })
   )
   .on("error", ({ code, error }) => {
     if (code === "NOT_FOUND") {
@@ -50,7 +49,7 @@ const app = new Elysia({
         origin.latitude,
         origin.longitude,
         destination.latitude,
-        destination.longitude,
+        destination.longitude
       );
 
       // const surgeCharge = max(1, active_requests/active_drivers)
@@ -73,7 +72,7 @@ const app = new Elysia({
         }),
         capacity: t.Number(),
       }),
-    },
+    }
   )
   .use(auth)
   .use(user)
@@ -81,8 +80,14 @@ const app = new Elysia({
 
 export type App = typeof app;
 
-app.listen(8080, () => {
-  console.log(
-    `🦊 uber backend Elysia is running at ${app.server?.hostname}:${app.server?.port}`,
-  );
-});
+app.listen(
+  {
+    port: 8080,
+    hostname: "0.0.0.0",
+  },
+  () => {
+    console.log(
+      `🦊 uber backend Elysia is running at ${app.server?.hostname}:${app.server?.port}`
+    );
+  }
+);

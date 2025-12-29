@@ -2,6 +2,11 @@ import type { Metadata } from "next";
 import "./globals.css";
 import Providers from "../components/providers";
 import { Toaster } from "sonner";
+import { Inter } from "next/font/google";
+
+const font = Inter({
+  subsets: ["latin"],
+});
 
 export const metadata: Metadata = {
   title: "Create Next App",
@@ -16,7 +21,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <Providers>
-        <body>
+        <body className={`bg-background max-w-lg mx-auto ${font.className}`}>
           {children}
           <Toaster />
         </body>

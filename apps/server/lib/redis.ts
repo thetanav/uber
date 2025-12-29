@@ -1,6 +1,5 @@
 import Redis from "ioredis";
 import { prisma } from "./prisma";
-// import { notifyCaptainTripStatus } from "../routes/ws";
 
 export const redis = new Redis({
   host: "localhost",
@@ -10,7 +9,7 @@ export const redis = new Redis({
 export async function saveCaptainLocation(
   id: string,
   lat: number,
-  long: number
+  long: number,
 ) {
   await redis.geoadd("captain:locations", long, lat, id);
 }
@@ -20,7 +19,7 @@ export async function findNearestCaptains(
   userLat: number,
   userLong: number,
   radius: number = 5,
-  max: number = 5
+  max: number = 5,
 ) {
   // TODO: this function will search for nearest drivers and then check wheather they are available for ride
   const results = await redis.geosearch(
@@ -34,7 +33,7 @@ export async function findNearestCaptains(
     "WITHDIST",
     "ASC",
     "COUNT",
-    max
+    max,
   );
   for (const result in results) {
     const captain = await prisma.captain.findUnique({
@@ -64,7 +63,6 @@ export async function findNearestCaptains(
         id: captain.id,
       },
     });
-    // notifyCaptainTripStatus(captain.id, tripId, "ACCEPTED");
   }
 }
 
@@ -73,4 +71,12 @@ export async function getCaptainLocation(id: string) {
   if (!pos || !pos[0]) return null;
   const [long, lat] = pos[0];
   return { lat, long };
+}
+
+export async function getUserFromTrip(tripId: string) {
+  const trip = await prisma.trip.findUnique({
+    where: { id: tripId },
+    select: { userId: true },
+  });
+  return trip?.userId;
 }

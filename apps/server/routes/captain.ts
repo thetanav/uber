@@ -23,6 +23,27 @@ export const captain = new Elysia({ prefix: "/captain" })
       throw new Error("Invalid token");
     }
   })
+  .post("/online", async ({ payload }) => {
+    await prisma.captain.update({
+      where: { id: payload.user as string },
+      data: {
+        isOnline: true,
+        isPooling: true,
+      },
+    });
+    return { message: "Captain is now online and pooling" };
+  })
+  .post("/offline", async ({ payload }) => {
+    await prisma.captain.update({
+      where: { id: payload.user as string },
+      data: {
+        isOnline: false,
+        isPooling: false,
+        inDrive: false,
+      },
+    });
+    return { message: "Captain is now offline" };
+  })
   .post(
     "/cancel",
     async ({ body, payload }) => {
@@ -41,7 +62,6 @@ export const captain = new Elysia({ prefix: "/captain" })
           where: { id },
           data: { status: "CANCELLED" },
         });
-        // User will get update via polling
       } else {
         return status(401, "Unauthorized");
       }
@@ -52,7 +72,7 @@ export const captain = new Elysia({ prefix: "/captain" })
       body: t.Object({
         id: t.String(),
       }),
-    }
+    },
   )
   .post(
     "/pickup",
@@ -82,7 +102,6 @@ export const captain = new Elysia({ prefix: "/captain" })
         data: { status: "ON_TRIP" },
       });
 
-      // User will get update via polling
       return { message: "Trip picked up successfully!" };
     },
     {
@@ -90,7 +109,7 @@ export const captain = new Elysia({ prefix: "/captain" })
         id: t.String(),
         otp: t.String(),
       }),
-    }
+    },
   )
   .post(
     "/complete",
@@ -114,14 +133,13 @@ export const captain = new Elysia({ prefix: "/captain" })
         data: { status: "COMPLETED" },
       });
 
-      // User will get update via polling
       return { message: "Trip completed successfully!" };
     },
     {
       body: t.Object({
         id: t.String(),
       }),
-    }
+    },
   )
   .get("/history", async ({ payload }) => {
     const trips = await prisma.trip.findMany({
@@ -132,14 +150,64 @@ export const captain = new Elysia({ prefix: "/captain" })
 
     return { trips };
   })
+  .get("/trips/available", async ({ payload }) => {
+    const captain = await prisma.captain.findUnique({
+      where: { id: payload.user as string },
+    });
+    if (!captain) return status(401, "Unauthorized");
+
+    const trips = await prisma.trip.findMany({
+      where: {
+        status: "REQUESTED",
+        captainId: null,
+      },
+      orderBy: { createdAt: "asc" },
+    });
+
+    return { trips };
+  })
+  .post("/trips/:id/accept", async ({ params, payload }) => {
+    const captain = await prisma.captain.findUnique({
+      where: { id: payload.user as string },
+    });
+    if (!captain) return status(401, "Unauthorized");
+
+    if (!captain.isOnline || captain.inDrive) {
+      return { message: "Captain is not available" };
+    }
+
+    const trip = await prisma.trip.findUnique({
+      where: { id: params.id },
+    });
+    if (!trip || trip.status !== "REQUESTED" || trip.captainId) {
+      return { message: "Trip is not available" };
+    }
+
+    await prisma.$transaction([
+      prisma.trip.update({
+        where: { id: params.id },
+        data: {
+          captainId: captain.id,
+          status: "ACCEPTED",
+        },
+      }),
+      prisma.captain.update({
+        where: { id: captain.id },
+        data: {
+          inDrive: true,
+          isPooling: false,
+        },
+      }),
+    ]);
+
+    return { message: "Trip accepted successfully!" };
+  })
   .post(
     "/location",
     async ({ body, payload }) => {
       const { lat, lng } = body;
       const captainId = payload.user as string;
 
-      // Always save to Redis geospatial index for matching
-      // captain pool this to send there realtime location every 3s max.
       await saveCaptainLocation(captainId, lat, lng);
     },
     {
@@ -147,5 +215,5 @@ export const captain = new Elysia({ prefix: "/captain" })
         lat: t.Number(),
         lng: t.Number(),
       }),
-    }
+    },
   );

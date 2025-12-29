@@ -1,13 +1,12 @@
 import { prisma } from "../lib/prisma";
 import { redis } from "../lib/redis";
 import { Captain } from "../generated/prisma/client";
-// import { notifyUserTripStatus } from "../routes/ws";
 
 export const firstCaptain = async (
   userId: string,
   tripId: string,
   lat: number,
-  long: number
+  long: number,
 ) => {
   // find the first available captian and match with the trip
   const captains = await redis.geosearch(
@@ -19,7 +18,7 @@ export const firstCaptain = async (
     "WITHCOORD",
     "COUNT",
     10,
-    "ASC"
+    "ASC",
   );
   let finalCaptain: Captain | null = null;
 
@@ -44,8 +43,6 @@ export const firstCaptain = async (
       where: { id: tripId },
       data: { captainId: finalCaptain.id },
     });
-    // send update to user that captain is found
-    // notifyUserTripStatus(userId, tripId, "CAPTAIN_FOUND");
   }
 
   return finalCaptain;
