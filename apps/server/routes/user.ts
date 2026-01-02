@@ -77,12 +77,12 @@ export const user = new Elysia({ prefix: "/user" })
         },
       });
 
-      await firstCaptain(
-        trip.userId,
-        trip.id,
-        origin.latitude,
-        origin.longitude
-      );
+      // await firstCaptain(
+      //   trip.userId,
+      //   trip.id,
+      //   origin.latitude,
+      //   origin.longitude
+      // );
 
       return status(200, {
         id: trip.id,

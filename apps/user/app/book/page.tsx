@@ -2,37 +2,46 @@
 
 import "leaflet/dist/leaflet.css";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { LocationEdit, MapPin, Navigation } from "lucide-react";
+import {
+  Check,
+  CheckCircle,
+  LocationEdit,
+  MapPin,
+  Navigation,
+  Pen,
+  Pencil,
+} from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import dynamic from "next/dynamic";
 import UserInfo from "@/components/user";
 import { LocationDialog } from "@/components/location-picker";
 import { MButton } from "@/components/mutation-button";
 import api from "@repo/eden";
 import { useRouter } from "next/navigation";
-
-const Map = dynamic(() => import("@/components/map"), { ssr: false });
+import MapComp from "@/components/map";
 
 export default function Book() {
   const router = useRouter();
   const [select, setSelect] = useState<number>(1);
   const [open, setOpen] = useState(false);
   const [choose, setChoose] = useState(true); // set origin
-  const [origin, setOrigin] = useState<any | null>(null);
-  const [destination, setDestination] = useState<any | null>(null);
+  const [origin, setOrigin] = useState<{
+    name: string;
+    latitude: number;
+    longitude: number;
+  }>();
+  const [destination, setDestination] = useState<{
+    name: string;
+    latitude: number;
+    longitude: number;
+  }>();
 
   const { data: expectedPrice } = useQuery({
     queryKey: ["price", origin, destination, select],
     queryFn: async () => {
+      if (origin === undefined || destination === undefined) return;
       const res = await api.price.post({
         origin,
         destination,
@@ -77,7 +86,7 @@ export default function Book() {
 
   const mutation = useMutation({
     mutationFn: async () => {
-      console.log(origin, destination);
+      if (origin === undefined || destination === undefined) return;
       const res = await api.user.request.post({
         origin,
         destination,
@@ -98,39 +107,37 @@ export default function Book() {
       <div>
         <UserInfo />
 
-        <div className="divide-y border rounded-lg shadow-sm">
-          <div className="flex gap-2 items-center justify-center px-2">
-            <MapPin />
-            <input
-              className="px-2 py-1 w-full text-ellipsis outline-none"
-              placeholder="From Where?"
-              value={origin?.name}
-              readOnly
-            />
+        <div className="divide-y border rounded-xl shadow">
+          <div className="flex gap-2 items-center justify-center px-4 py-3">
+            <MapPin className="w-6 h-6 text-muted-foreground" />
+            <h2 className="px-2 py-1 w-full">
+              {origin?.name || "From Where?"}
+            </h2>
             <Button
               variant={"ghost"}
+              size={"icon-sm"}
+              className="text-muted-foreground"
               onClick={() => {
                 setOpen(true);
                 setChoose(true);
               }}>
-              <LocationEdit />
+              <Pencil />
             </Button>
           </div>
-          <div className="flex gap-2 items-center justify-center px-2">
-            <Navigation />
-            <input
-              placeholder="Where to?"
-              value={destination?.name}
-              readOnly
-              className="px-2 py-1 w-full text-ellipsis outline-none"
-            />
+          <div className="flex gap-2 items-center justify-center px-4 py-3">
+            <Navigation className="w-6 h-6 text-muted-foreground" />
+            <h2 className="px-2 py-1 w-full">
+              {destination?.name || "From Where?"}
+            </h2>
             <Button
               variant={"ghost"}
+              size={"icon-sm"}
+              className="text-muted-foreground"
               onClick={() => {
                 setOpen(true);
                 setChoose(false);
               }}>
-              <LocationEdit />
+              <Pencil />
             </Button>
           </div>
         </div>
@@ -145,20 +152,20 @@ export default function Book() {
           setDestination={setDestination}
           choose={choose}
         />
+
         {origin && destination && (
           <div className="mt-8 border rounded-lg overflow-hidden">
-            <Map
-              from={[origin.latitude, origin.longitude]}
-              to={[destination.latitude, destination.longitude]}
-              key={`${origin.latitude}-${origin.longitude}-${destination.latitude}-${destination.longitude}`}
-            />
+            <MapComp origin={origin} destination={destination} />
           </div>
         )}
-        <div className="mt-8">
-          <h1 className="text-xl font-bold mb-3">
-            Estimated price ${expectedPrice ? expectedPrice.toFixed(2) : "N/A"}
-          </h1>
-          <div className="space-y-2">
+
+        <div className="my-8">
+          {expectedPrice && (
+            <h1 className="text-xl font-bold mb-3">
+              Estimated price ${expectedPrice.toFixed(2)}
+            </h1>
+          )}
+          <div className="space-y-4">
             <VehicleSelect
               capacity={1}
               src="https://img.icons8.com/ios-filled/100/motorcycle.png"
@@ -200,11 +207,11 @@ export default function Book() {
 const VehicleSelect = ({ src, name, select, setSelect, capacity }: any) => {
   return (
     <Card
-      className={`cursor-pointer transition-all hover:shadow-md ${select == capacity ? "ring-2 ring-primary bg-accent" : ""}`}
+      className={`cursor-pointer select-none transition-all ${select == capacity ? "ring-2 ring-primary border-primary" : ""}`}
       onClick={() => {
         setSelect(capacity);
       }}>
-      <CardContent className="px-4">
+      <CardContent className="px-6">
         <div className="flex items-center gap-3">
           <img
             src={src}
@@ -217,6 +224,11 @@ const VehicleSelect = ({ src, name, select, setSelect, capacity }: any) => {
               Capacity: {capacity}
             </p>
           </div>
+          {select == capacity && (
+            <div>
+              <Check className="w-5" />
+            </div>
+          )}
         </div>
       </CardContent>
     </Card>

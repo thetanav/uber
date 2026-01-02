@@ -9,6 +9,7 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import dynamic from "next/dynamic";
 import { useParams } from "next/navigation";
+import MapComp from "@/components/map";
 
 const Map = dynamic(() => import("@/components/map"), { ssr: true });
 
@@ -19,51 +20,26 @@ type TripStatus =
   | "COMPLETED"
   | "CANCELLED";
 
-interface Trip {
-  id: string;
-  origin: string;
-  originLat: number | null;
-  originLng: number | null;
-  destination: string;
-  destLat: number | null;
-  destLng: number | null;
-  status: TripStatus;
-  otp: string;
-  pricing: number;
-  capacity: number;
-  captain?: {
-    id: string;
-    name: string;
-    vehicle?: string;
-    location?: {
-      lat: number;
-      lng: number;
-    } | null;
-  } | null;
-}
-
 export default function RideDetails() {
   const params = useParams();
   const rideId = params.id as string;
   const [status, setStatus] = useState<TripStatus | null>(null);
 
-  const { data: trip, isLoading } = useQuery<Trip>({
+  const { data: trip, isLoading } = useQuery({
     queryKey: ["trip", rideId],
     queryFn: async () => {
       const res = await api.user.trip({ id: rideId }).get();
       if (res.status !== 200) {
         throw new Error("Failed to fetch trip details");
       }
-      const tripData = res.data as any;
-      return {
-        ...tripData,
-        originLat: tripData.originLat ? Number(tripData.originLat) : null,
-        originLng: tripData.originLng ? Number(tripData.originLng) : null,
-        destLat: tripData.destLat ? Number(tripData.destLat) : null,
-        destLng: tripData.destLng ? Number(tripData.destLng) : null,
-        pricing: tripData.pricing ? Number(tripData.pricing) : 0,
-      };
+      return res.data;
+      // originLat: tripData.originLat,
+      // originLng: tripData.originLng,
+      // destLat: tripData.destLat,
+      // destLng: tripData.destLng,
+      // pricing: tripData.pricing,
     },
+
     // Adaptive polling based on trip status
     refetchInterval: (query) => {
       const tripData = query.state.data;
@@ -82,20 +58,10 @@ export default function RideDetails() {
       // Default polling for other statuses
       return 3000; // 3 seconds
     },
+
     refetchIntervalInBackground: true,
     staleTime: 0, // Always fetch fresh data
   });
-
-  // Sync local status state from trip data
-  useEffect(() => {
-    if (trip?.status) {
-      // Show toast when status changes
-      if (status && status !== trip.status) {
-        toast.success(`Ride status updated: ${trip.status}`);
-      }
-      setStatus(trip.status);
-    }
-  }, [trip?.status, status]);
 
   const getStatusColor = (status: TripStatus) => {
     switch (status) {
@@ -152,8 +118,7 @@ export default function RideDetails() {
         <span className="text-2xl font-bold">Ride Details</span>
         {status && (
           <span
-            className={`px-3 py-1 rounded-full text-sm font-semibold ${getStatusColor(status)}`}
-          >
+            className={`px-3 py-1 rounded-full text-sm font-semibold ${getStatusColor(status)}`}>
             {getStatusLabel(status)}
           </span>
         )}
@@ -206,12 +171,23 @@ export default function RideDetails() {
         {/* Map */}
         {canShowMap && (
           <div className="border rounded-lg overflow-hidden">
-            <Map
-              from={[trip.originLat!, trip.originLng!]}
-              to={[trip.destLat!, trip.destLng!]}
+            <MapComp
+              origin={{
+                name: trip.origin,
+                latitude: trip.originLat,
+                longitude: trip.originLng,
+              }}
+              destination={{
+                name: trip.destination,
+                latitude: trip.destLat,
+                longitude: trip.destLng,
+              }}
               captainLocation={
                 trip.captain?.location
-                  ? [trip.captain.location.lat, trip.captain.location.lng]
+                  ? [
+                      Number(trip.captain.location.lat),
+                      Number(trip.captain.location.lng),
+                    ]
                   : null
               }
             />
@@ -228,7 +204,7 @@ export default function RideDetails() {
           </div>
           <div>
             <p className="text-sm text-gray-600">Price</p>
-            <p className="text-lg font-semibold">${trip.pricing.toFixed(2)}</p>
+            <p className="text-lg font-semibold">${trip.pricing.toString()}</p>
           </div>
         </div>
 

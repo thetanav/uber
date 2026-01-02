@@ -2,10 +2,10 @@ import type { Metadata } from "next";
 import "./globals.css";
 import Providers from "../components/providers";
 import { Toaster } from "sonner";
-import { Inter } from "next/font/google";
+import { Geist } from "next/font/google";
 
-const font = Inter({
-  subsets: ["latin"],
+const font = Geist({
+  style: ["normal"],
 });
 
 export const metadata: Metadata = {

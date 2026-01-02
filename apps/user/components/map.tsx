@@ -1,152 +1,84 @@
 "use client";
 
-import { useEffect, useRef, memo } from "react";
-import L from "leaflet";
-import "leaflet/dist/leaflet.css";
+import { Loader2 } from "lucide-react";
+import { useEffect, useRef, memo, useState } from "react";
+import { Map, MapMarker, MapRoute, MarkerContent, MarkerLabel } from "./ui/map";
 
-// Fix Leaflet's missing default icon issue
-const iconUrl = "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png";
-const iconRetinaUrl =
-  "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png";
-const shadowUrl =
-  "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png";
-
-L.Icon.Default.mergeOptions({
-  iconUrl,
-  iconRetinaUrl,
-  shadowUrl,
-});
-
-function Map({
-  from,
-  to,
+export default function MapComp({
+  origin,
+  destination,
   captainLocation,
 }: {
-  from: [number, number];
-  to: [number, number];
+  origin: any;
+  destination: any;
   captainLocation?: [number, number] | null;
 }) {
-  const mapRef = useRef<HTMLDivElement | null>(null);
-  const mapInstanceRef = useRef<L.Map | null>(null);
-  const markersRef = useRef<L.Marker[]>([]);
-  const routeLineRef = useRef<L.Polyline | null>(null);
-  const captainMarkerRef = useRef<L.Marker | null>(null);
+  const [route, setRoute] = useState<[number, number][] | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Initialize map once
   useEffect(() => {
-    if (!mapRef.current || mapInstanceRef.current) return;
+    async function fetchRoute() {
+      try {
+        const response = await fetch(
+          `https://router.project-osrm.org/route/v1/driving/${origin.longitude},${origin.latitude};${destination.longitude},${destination.latitude}?overview=full&geometries=geojson`
+        );
+        const data = await response.json();
 
-    const map = L.map(mapRef.current).setView(from, 13);
-
-    // Tile layer
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      maxZoom: 19,
-    }).addTo(map);
-
-    mapInstanceRef.current = map;
-
-    return () => {
-      if (mapInstanceRef.current) {
-        mapInstanceRef.current.remove();
-        mapInstanceRef.current = null;
+        if (data.routes?.[0]?.geometry?.coordinates) {
+          setRoute(data.routes[0].geometry.coordinates);
+        }
+      } catch (error) {
+        console.error("Failed to fetch route:", error);
+      } finally {
+        setIsLoading(false);
       }
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }
+
+    fetchRoute();
   }, []);
 
-  // Update route when from/to changes
-  useEffect(() => {
-    const map = mapInstanceRef.current;
-    if (!map) return;
-
-    // Clear previous markers and route
-    markersRef.current.forEach((marker) => marker.remove());
-    markersRef.current = [];
-    if (routeLineRef.current) {
-      routeLineRef.current.remove();
-      routeLineRef.current = null;
-    }
-
-    // Fetch and draw new route
-    const url = `https://router.project-osrm.org/route/v1/driving/${from[1]},${from[0]};${to[1]},${to[0]}?overview=full&geometries=geojson`;
-
-    fetch(url)
-      .then((res) => res.json())
-      .then((data) => {
-        if (!data.routes?.length || !map) return;
-
-        const route = data.routes[0].geometry.coordinates;
-        const latlngs = route.map(([lng, lat]: number[]) => [lat, lng]);
-
-        const line = L.polyline(latlngs, { color: "blue", weight: 5 }).addTo(
-          map,
-        );
-        routeLineRef.current = line;
-
-        const originMarker = L.marker(from).addTo(map);
-        const destMarker = L.marker(to).addTo(map);
-        markersRef.current = [originMarker, destMarker];
-
-        map.fitBounds(line.getBounds());
-      })
-      .catch((err) => console.log("OSRM ERROR", err));
-  }, [from, to]);
-
-  // Update captain location marker when it changes
-  useEffect(() => {
-    const map = mapInstanceRef.current;
-    if (!map) return;
-
-    // Remove old captain marker
-    if (captainMarkerRef.current) {
-      captainMarkerRef.current.remove();
-      captainMarkerRef.current = null;
-    }
-
-    // Add new captain marker if location provided
-    if (captainLocation) {
-      // Create custom icon for captain (different color)
-      const captainIcon = L.divIcon({
-        html: '<div style="background-color: #10b981; width: 25px; height: 25px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 6px rgba(0,0,0,0.3);"></div>',
-        className: "",
-        iconSize: [25, 25],
-        iconAnchor: [12, 12],
-      });
-
-      const marker = L.marker(captainLocation, { icon: captainIcon }).addTo(
-        map,
-      );
-      captainMarkerRef.current = marker;
-    }
-  }, [captainLocation]);
-
   return (
-    <div
-      ref={mapRef}
-      style={{
-        height: "100%",
-        width: "100%",
-        minHeight: "400px",
-      }}
-    />
+    <div className="h-[400px] w-full relative">
+      <Map center={[origin.longitude, origin.latitude]} zoom={12.5}>
+        {route && (
+          <MapRoute
+            coordinates={route}
+            color="#6366f1"
+            width={5}
+            opacity={0.85}
+          />
+        )}
+
+        <MapMarker longitude={origin.longitude} latitude={origin.latitude}>
+          <MarkerContent>
+            <div className="size-5 rounded-full bg-green-500 border-2 border-white shadow-lg" />
+            <MarkerLabel
+              position="bottom"
+              className="text-xs px-2 py-1 border rounded-md bg-white opacity-80">
+              {origin.name.substring(0, 20)}
+            </MarkerLabel>
+          </MarkerContent>
+        </MapMarker>
+
+        <MapMarker
+          longitude={destination.longitude}
+          latitude={destination.latitude}>
+          <MarkerContent>
+            <div className="size-5 rounded-full bg-red-500 border-2 border-white shadow-lg" />
+            <MarkerLabel
+              position="bottom"
+              className="text-xs px-2 py-1 border rounded-md bg-white opacity-80">
+              {destination.name.substring(0, 20)}
+            </MarkerLabel>
+          </MarkerContent>
+        </MapMarker>
+      </Map>
+
+      {isLoading && (
+        <div className="absolute inset-0 flex items-center justify-center bg-background/50">
+          <Loader2 className="size-6 animate-spin text-muted-foreground" />
+        </div>
+      )}
+    </div>
   );
 }
-
-// Memoize to prevent unnecessary re-renders when parent re-renders
-export default memo(Map, (prevProps, nextProps) => {
-  const sameOriginDest =
-    prevProps.from[0] === nextProps.from[0] &&
-    prevProps.from[1] === nextProps.from[1] &&
-    prevProps.to[0] === nextProps.to[0] &&
-    prevProps.to[1] === nextProps.to[1];
-
-  // Compare captain location
-  const sameCaptainLocation =
-    (!prevProps.captainLocation && !nextProps.captainLocation) ||
-    (!!prevProps.captainLocation &&
-      !!nextProps.captainLocation &&
-      prevProps.captainLocation[0] === nextProps.captainLocation[0] &&
-      prevProps.captainLocation[1] === nextProps.captainLocation[1]);
-
-  return sameOriginDest && sameCaptainLocation;
-});

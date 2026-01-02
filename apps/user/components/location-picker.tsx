@@ -22,7 +22,7 @@ export function LocationDialog({
   const [loading, setLoading] = useState(false);
 
   return (
-    <Dialog open={open} onOpenChange={onClose}>
+    <Dialog open={open} onOpenChange={onClose} modal={false}>
       <DialogContent className="p-4 max-w-lg">
         <DialogHeader>
           <DialogTitle>Select {choose ? "Origin" : "Destination"}</DialogTitle>
