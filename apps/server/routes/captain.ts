@@ -2,6 +2,7 @@ import { Elysia, status, t } from "elysia";
 import { jwtPlugin } from "../lib/jwt";
 import { prisma } from "../lib/prisma";
 import { saveCaptainLocation, findNearestCaptains } from "../lib/redis";
+import { broadcastToTrip } from "../routes/ws";
 
 export const captain = new Elysia({ prefix: "/captain" })
   .use(jwtPlugin)
@@ -62,6 +63,11 @@ export const captain = new Elysia({ prefix: "/captain" })
           where: { id },
           data: { status: "CANCELLED" },
         });
+        broadcastToTrip(id, {
+          type: "trip_update",
+          tripId: id,
+          status: "CANCELLED",
+        });
       } else {
         return status(401, "Unauthorized");
       }
@@ -101,6 +107,11 @@ export const captain = new Elysia({ prefix: "/captain" })
         where: { id },
         data: { status: "ON_TRIP" },
       });
+      broadcastToTrip(id, {
+        type: "trip_update",
+        tripId: id,
+        status: "ON_TRIP",
+      });
 
       return { message: "Trip picked up successfully!" };
     },
@@ -132,6 +143,11 @@ export const captain = new Elysia({ prefix: "/captain" })
         where: { id },
         data: { status: "COMPLETED" },
       });
+      broadcastToTrip(id, {
+        type: "trip_update",
+        tripId: id,
+        status: "COMPLETED",
+      });
 
       return { message: "Trip completed successfully!" };
     },
@@ -146,22 +162,6 @@ export const captain = new Elysia({ prefix: "/captain" })
       where: { captainId: payload.user as string },
       include: { user: true },
       orderBy: { createdAt: "desc" },
-    });
-
-    return { trips };
-  })
-  .get("/trips/available", async ({ payload }) => {
-    const captain = await prisma.captain.findUnique({
-      where: { id: payload.user as string },
-    });
-    if (!captain) return status(401, "Unauthorized");
-
-    const trips = await prisma.trip.findMany({
-      where: {
-        status: "REQUESTED",
-        captainId: null,
-      },
-      orderBy: { createdAt: "asc" },
     });
 
     return { trips };
@@ -199,21 +199,11 @@ export const captain = new Elysia({ prefix: "/captain" })
         },
       }),
     ]);
+    broadcastToTrip(params.id, {
+      type: "trip_update",
+      tripId: params.id,
+      status: "ACCEPTED",
+    });
 
     return { message: "Trip accepted successfully!" };
-  })
-  .post(
-    "/location",
-    async ({ body, payload }) => {
-      const { lat, lng } = body;
-      const captainId = payload.user as string;
-
-      await saveCaptainLocation(captainId, lat, lng);
-    },
-    {
-      body: t.Object({
-        lat: t.Number(),
-        lng: t.Number(),
-      }),
-    },
-  );
+  });

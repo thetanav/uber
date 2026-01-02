@@ -5,6 +5,13 @@ import { swagger } from "@elysiajs/swagger";
 import { cors } from "@elysiajs/cors";
 import { captain } from "../routes/captain";
 import { haversine } from "../lib/math";
+import {
+  handleWebSocket,
+  handleMessage,
+  handleClose,
+  broadcastToTrip,
+  broadcastNewTrip,
+} from "../routes/ws";
 
 const app = new Elysia({
   cookie: {
@@ -17,7 +24,7 @@ const app = new Elysia({
   .use(
     cors({
       credentials: true,
-    })
+    }),
   )
   .use(
     swagger({
@@ -31,7 +38,7 @@ const app = new Elysia({
           description: "API docs for my ride app",
         },
       },
-    })
+    }),
   )
   .on("error", ({ code, error }) => {
     if (code === "NOT_FOUND") {
@@ -49,7 +56,7 @@ const app = new Elysia({
         origin.latitude,
         origin.longitude,
         destination.latitude,
-        destination.longitude
+        destination.longitude,
       );
 
       // const surgeCharge = max(1, active_requests/active_drivers)
@@ -72,7 +79,7 @@ const app = new Elysia({
         }),
         capacity: t.Number(),
       }),
-    }
+    },
   )
   .use(auth)
   .use(user)
@@ -80,14 +87,22 @@ const app = new Elysia({
 
 export type App = typeof app;
 
-app.listen(
-  {
-    port: 8080,
-    hostname: "0.0.0.0",
+export { broadcastToTrip, broadcastNewTrip };
+
+const server = Bun.serve({
+  port: 8080,
+  hostname: "0.0.0.0",
+  fetch: app.fetch,
+  websocket: {
+    message: (ws: any, message) => handleMessage(ws, message),
+    open: (ws: any) => handleWebSocket(ws),
+    close: (ws: any) => handleClose(ws),
   },
-  () => {
-    console.log(
-      `🦊 uber backend Elysia is running at ${app.server?.hostname}:${app.server?.port}`
-    );
-  }
+});
+
+console.log(
+  `🦊 uber backend Elysia is running at ${server.hostname}:${server.port}`,
+);
+console.log(
+  `🔌 WebSocket server is ready at ws://${server.hostname}:${server.port}/ws`,
 );

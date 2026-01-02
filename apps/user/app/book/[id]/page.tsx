@@ -3,13 +3,14 @@
 import "leaflet/dist/leaflet.css";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import api from "@repo/eden";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { MapPin, Navigation, Loader2, Shield } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import dynamic from "next/dynamic";
 import { useParams } from "next/navigation";
 import MapComp from "@/components/map";
+import { Button } from "@/components/ui/button";
 
 const Map = dynamic(() => import("@/components/map"), { ssr: true });
 
@@ -24,6 +25,22 @@ export default function RideDetails() {
   const params = useParams();
   const rideId = params.id as string;
   const [status, setStatus] = useState<TripStatus | null>(null);
+
+  const cancelMutation = useMutation({
+    mutationFn: async () => {
+      const res = await api.user.cancel.post({ id: rideId });
+      if (res.status !== 200) {
+        throw new Error("Failed to cancel trip");
+      }
+    },
+    onSuccess: () => {
+      toast.success("Trip cancelled successfully!");
+      setStatus("CANCELLED");
+    },
+    onError: () => {
+      toast.error("Failed to cancel trip");
+    },
+  });
 
   const { data: trip, isLoading } = useQuery({
     queryKey: ["trip", rideId],
@@ -118,7 +135,8 @@ export default function RideDetails() {
         <span className="text-2xl font-bold">Ride Details</span>
         {status && (
           <span
-            className={`px-3 py-1 rounded-full text-sm font-semibold ${getStatusColor(status)}`}>
+            className={`px-3 py-1 rounded-full text-sm font-semibold ${getStatusColor(status)}`}
+          >
             {getStatusLabel(status)}
           </span>
         )}
@@ -225,12 +243,22 @@ export default function RideDetails() {
 
         {/* Status Messages */}
         {status === "REQUESTED" && (
-          <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-            <p className="text-sm text-yellow-800">
-              Your ride request has been sent. We're looking for a driver
-              nearby...
-            </p>
-          </div>
+          <>
+            <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+              <p className="text-sm text-yellow-800">
+                Your ride request has been sent. We're looking for a driver
+                nearby...
+              </p>
+            </div>
+            <Button
+              variant="destructive"
+              onClick={() => cancelMutation.mutate()}
+              disabled={cancelMutation.isPending}
+              className="w-full mt-4"
+            >
+              {cancelMutation.isPending ? "Cancelling..." : "Cancel Trip"}
+            </Button>
+          </>
         )}
 
         {status === "ACCEPTED" && !trip.captain && (
