@@ -52,7 +52,7 @@ export default function Login() {
           />
           <div className="text-center text-sm">
             Forgot password{" "}
-            <Link href="/auth/signup" className="text-primary hover:underline">
+            <Link href="/auth/signin" className="text-primary hover:underline">
               reset?
             </Link>
           </div>
@@ -61,7 +61,7 @@ export default function Login() {
           </MButton>
           <div className="text-center text-sm">
             Don't have an account?{" "}
-            <Link href="/auth/signup" className="text-primary hover:underline">
+            <Link href="/auth/signin" className="text-primary hover:underline">
               Sign up
             </Link>
           </div>

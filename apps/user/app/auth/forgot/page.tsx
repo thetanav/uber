@@ -45,7 +45,7 @@ export default function Reset() {
           </MButton>
           <div className="text-center text-sm">
             Remember your password?{" "}
-            <Link href="/auth/login" className="text-primary hover:underline">
+            <Link href="/auth/signin" className="text-primary hover:underline">
               Login
             </Link>
           </div>

@@ -67,7 +67,7 @@ export default function Signup() {
           </MButton>
           <div className="text-center text-sm">
             Already have an account?{" "}
-            <Link href="/auth/login" className="text-primary hover:underline">
+            <Link href="/auth/signin" className="text-primary hover:underline">
               Login
             </Link>
           </div>

@@ -90,7 +90,7 @@ export type App = typeof app;
 export { broadcastToTrip, broadcastNewTrip };
 
 const server = Bun.serve({
-  port: 8080,
+  port: Bun.env.PORT,
   hostname: "0.0.0.0",
   fetch: app.fetch,
   websocket: {

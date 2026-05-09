@@ -30,7 +30,7 @@ function ResetForm() {
       );
       if (res.status === 200) {
         toast.success("Password updated successfully");
-        router.push("/auth/login");
+        router.push("/auth/signin");
       } else {
         toast.error("An error occurred");
       }
