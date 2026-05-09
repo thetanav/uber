@@ -13,6 +13,6 @@ export default async function Layout({
       cookie,
     },
   });
-  if (!res) redirect("/");
+  if (!res) redirect("/login");
   return children;
 }

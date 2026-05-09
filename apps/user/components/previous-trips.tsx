@@ -20,7 +20,7 @@ import { Button } from "./ui/button";
 import Link from "next/link";
 
 export const PreviousTrips = () => {
-  const { data } = useQuery({
+  const { data, isLoading } = useQuery({
     queryKey: ["previous-trips"],
     queryFn: async () => {
       const res = await api.user.history.get();
@@ -28,8 +28,17 @@ export const PreviousTrips = () => {
     },
   });
   return (
-    <div className="grid grid-cols-1 gap-4 mt-4 select-none">
-      {data &&
+    <div className="mt-4 select-none">
+      <p className="text-xl font-bold text-muted-foreground mb-4">
+        Ongoing Trips
+      </p>
+      {isLoading ? (
+        <div className="gap-2 flex flex-col w-full">
+          <div className="animate-pulse size-4 bg-neutral-100 rounded-3xl h-48 w-full" />
+          <div className="animate-pulse size-4 bg-neutral-100 rounded-3xl h-48 w-full" />
+          <div className="animate-pulse size-4 bg-neutral-100 rounded-3xl h-48 w-full" />
+        </div>
+      ) : (
         data?.trips.map((trip) => (
           <div key={trip.id} className="border rounded-xl p-4">
             <div className="space-y-2">
@@ -88,7 +97,8 @@ export const PreviousTrips = () => {
               </Link>
             </div>
           </div>
-        ))}
+        ))
+      )}
     </div>
   );
 };

@@ -171,4 +171,12 @@ export const user = new Elysia({ prefix: "/user" })
     });
 
     return { trips };
+  })
+  .get("/ongoing", async ({ payload }) => {
+    const trips = await prisma.trip.findMany({
+      where: { userId: payload.user, status: OR"ON_TRIP" },
+      orderBy: { createdAt: "desc" },
+    });
+
+    return { trips };
   });

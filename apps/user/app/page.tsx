@@ -1,4 +1,3 @@
-import api from "@repo/eden";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import {
@@ -51,7 +50,7 @@ export default function Home() {
     <main className="p-4">
       <nav className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-primary">Uber</h1>
-        <div className="flex gap-4">
+        <div className="flex gap-2">
           <Link href="/auth/signin">
             <Button variant="ghost">Sign In</Button>
           </Link>
