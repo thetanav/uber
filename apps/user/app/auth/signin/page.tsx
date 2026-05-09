@@ -52,9 +52,10 @@ export default function Login() {
           />
           <div className="text-center text-sm">
             Forgot password{" "}
-            <Link href="/auth/reset" className="text-primary hover:underline">
-              reset?
+            <Link href="/auth/forgot" className="text-primary hover:underline">
+              reset
             </Link>
+            ?
           </div>
           <MButton mutation={mutation} className="w-full">
             Login
