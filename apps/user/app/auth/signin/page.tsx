@@ -52,7 +52,7 @@ export default function Login() {
           />
           <div className="text-center text-sm">
             Forgot password{" "}
-            <Link href="/auth/signin" className="text-primary hover:underline">
+            <Link href="/auth/reset" className="text-primary hover:underline">
               reset?
             </Link>
           </div>

@@ -8,11 +8,11 @@ export default async function Layout({
   children: React.ReactNode;
 }) {
   const cookie = (await cookies()).toString();
-  const res = await api.user.get({
+  const res = await api.user.verify.get({
     headers: {
       cookie,
     },
   });
-  if (!res.data) redirect("/");
+  if (!res) redirect("/");
   return children;
 }

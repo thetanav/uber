@@ -28,10 +28,12 @@ export function MButton({
       variant={variant}
       className={
         className +
-        " relative disabled:opacity-100 overflow-hidden cursor-pointer select-none"
-      }>
+        " relative disabled:opacity-100 overflow-hidden cursor-pointer select-none squircle"
+      }
+    >
       <div
-        className={`absolute top-0 left-0 right-0 bottom-0 flex items-center justify-center ${isPending ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-5"} transition-all duration-100 ease-in-out`}>
+        className={`absolute top-0 left-0 right-0 bottom-0 flex items-center justify-center ${isPending ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-5"} transition-all duration-100 ease-in-out`}
+      >
         <Loader className="animate-spin" />
       </div>
 
@@ -41,7 +43,8 @@ export function MButton({
             ? "opacity-0 translate-y-5"
             : "opacity-100 translate-y-0") +
           " transition-all duration-100 ease-in-out"
-        }>
+        }
+      >
         {children}
       </p>
     </Button>

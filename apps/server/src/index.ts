@@ -12,17 +12,18 @@ import {
   broadcastToTrip,
   broadcastNewTrip,
 } from "../routes/ws";
+import { logger } from "../lib/logger";
 
 const app = new Elysia({
   cookie: {
-    httpOnly: true,
     sameSite: "lax",
-    secure: false, // TODO: true in production (https)
+    secure: true, // TODO: true in production (https)
     path: "/",
   },
 })
   .use(
     cors({
+      origin: ["https://uber.local", "https://api.uber.local"],
       credentials: true,
     }),
   )
@@ -100,9 +101,9 @@ const server = Bun.serve({
   },
 });
 
-console.log(
+logger.info(
   `🦊 uber backend Elysia is running at ${server.hostname}:${server.port}`,
 );
-console.log(
+logger.info(
   `🔌 WebSocket server is ready at ws://${server.hostname}:${server.port}/ws`,
 );

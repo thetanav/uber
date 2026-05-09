@@ -17,15 +17,17 @@ CREATE TABLE "User" (
 CREATE TABLE "Trip" (
     "id" TEXT NOT NULL,
     "origin" TEXT NOT NULL,
-    "originLat" DOUBLE PRECISION,
-    "originLng" DOUBLE PRECISION,
+    "originLat" DECIMAL(10,8),
+    "originLng" DECIMAL(10,8),
     "destination" TEXT NOT NULL,
-    "destLat" DOUBLE PRECISION,
-    "destLng" DOUBLE PRECISION,
+    "destLat" DECIMAL(10,8),
+    "destLng" DECIMAL(10,8),
+    "capacity" INTEGER NOT NULL,
     "captainId" TEXT,
     "userId" TEXT NOT NULL,
-    "pricing" INTEGER NOT NULL,
+    "pricing" DECIMAL(10,2) NOT NULL,
     "status" "TripStatus" NOT NULL DEFAULT 'REQUESTED',
+    "otp" TEXT NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
@@ -35,14 +37,17 @@ CREATE TABLE "Trip" (
 -- CreateTable
 CREATE TABLE "Captain" (
     "id" TEXT NOT NULL,
-    "name" TEXT,
+    "name" TEXT NOT NULL,
     "email" TEXT NOT NULL,
-    "passwordHash" TEXT NOT NULL,
+    "password" TEXT NOT NULL,
     "vehicle" TEXT,
     "capacity" INTEGER NOT NULL,
-    "currentLat" DOUBLE PRECISION,
-    "currentLng" DOUBLE PRECISION,
-    "isActive" BOOLEAN NOT NULL DEFAULT false,
+    "currentLat" DECIMAL(10,8),
+    "currentLng" DECIMAL(10,8),
+    "isOnline" BOOLEAN NOT NULL DEFAULT false,
+    "inDrive" BOOLEAN NOT NULL DEFAULT false,
+    "isPooling" BOOLEAN NOT NULL DEFAULT false,
+    "isVerified" BOOLEAN NOT NULL DEFAULT false,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
@@ -51,6 +56,15 @@ CREATE TABLE "Captain" (
 
 -- CreateIndex
 CREATE UNIQUE INDEX "User_email_key" ON "User"("email");
+
+-- CreateIndex
+CREATE INDEX "Trip_captainId_idx" ON "Trip"("captainId");
+
+-- CreateIndex
+CREATE INDEX "Trip_userId_idx" ON "Trip"("userId");
+
+-- CreateIndex
+CREATE INDEX "Trip_status_idx" ON "Trip"("status");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "Captain_email_key" ON "Captain"("email");

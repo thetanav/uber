@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import Providers from "../components/providers";
 import { Toaster } from "sonner";
+import NextTopLoader from "nextjs-toploader";
 import { Geist } from "next/font/google";
 
 const font = Geist({
@@ -22,6 +23,7 @@ export default function RootLayout({
     <html lang="en">
       <Providers>
         <body className={`bg-background max-w-lg mx-auto ${font.className}`}>
+          <NextTopLoader showSpinner={false} color="#000" />
           {children}
           <Toaster />
         </body>

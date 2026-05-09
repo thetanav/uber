@@ -129,3 +129,8 @@
     @apply hidden!;
   }
 }
+
+.squircle {
+    corner-shape: "squircle" !important;
+    border-radius: 15px !important;
+}

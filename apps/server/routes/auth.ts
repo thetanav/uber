@@ -4,9 +4,8 @@ import bcrypt from "bcrypt";
 import { jwtPlugin } from "../lib/jwt";
 import { sendEmail } from "../lib/resend";
 import jwt from "jsonwebtoken";
-import { Captain, User } from "../generated/prisma/client";
-import { UserModel } from "../generated/prisma/models";
 import { Role } from "../lib/types";
+import { logger } from "../lib/logger";
 
 export const auth = new Elysia({ prefix: "/auth" })
   .use(jwtPlugin)
@@ -62,6 +61,7 @@ export const auth = new Elysia({ prefix: "/auth" })
           },
         });
       }
+      logger.info(`User created: ${name} (${email})`);
       return { message: "User created!" };
     },
     {
@@ -74,29 +74,27 @@ export const auth = new Elysia({ prefix: "/auth" })
         confirmPassword: t.String(),
         role: Role,
       }),
-    }
+    },
   )
   .post(
     "/signin",
     async ({ jwt, body, cookie }) => {
       const { email, password, role } = body;
       const table: any = role === "user" ? prisma.user : prisma.captain;
-
-      const user = await table.findUnique({
+      const user = await prisma.user.findUnique({
         where: { email },
       });
       if (user && (await bcrypt.compare(password, user.password))) {
         const token = await jwt.sign({ user: user.id, role });
-        console.log("token generated", token);
         cookie.auth?.set({
           value: token,
-          httpOnly: true,
           sameSite: "lax",
-          secure: false,
+          secure: true,
           path: "/",
         });
         return status(200, { token, message: "Login successful!" });
       }
+      logger.info(`User logged in: ${email}`);
       return status(401, { message: "Login unsuccessful!" });
     },
     {
@@ -105,7 +103,7 @@ export const auth = new Elysia({ prefix: "/auth" })
         password: t.String(),
         role: Role,
       }),
-    }
+    },
   )
   .get("/signout", ({ cookie }) => {
     cookie.auth?.remove();
@@ -129,6 +127,7 @@ export const auth = new Elysia({ prefix: "/auth" })
         subject: "Reset your password",
         html: `<htmL><body><h1>Reset your password</h1><p>Click the link below to reset your password:</p><a href="http://localhost:3000/auth/reset?token=${token}">Reset password</a><p>The link is active for 5 mins only.</p></htmL></body>`,
       });
+      logger.info(`Password reset email sent: ${email}`);
       return { message: "Password reset email sent!" };
     },
     {
@@ -136,7 +135,7 @@ export const auth = new Elysia({ prefix: "/auth" })
         email: t.String({ format: "email" }),
         role: Role,
       }),
-    }
+    },
   )
   .post(
     "/reset",
@@ -145,7 +144,6 @@ export const auth = new Elysia({ prefix: "/auth" })
       const { password, role } = body;
 
       const payload: any = jwt.verify(token, Bun.env.JWT_SECRET!);
-      console.log(payload);
       if (!payload) return status(400, { message: "Invalid token" });
       if (payload.time < Date.now() - 5 * 60 * 1000)
         return status(400, { message: "Token expired" });
@@ -159,6 +157,7 @@ export const auth = new Elysia({ prefix: "/auth" })
       } catch (err) {
         return status(400, { message: "Unkown Error" });
       }
+      logger.info(`Password reset successful: ${payload.email}`);
       return status(200, { message: "Password updated!" });
     },
     {
@@ -166,5 +165,5 @@ export const auth = new Elysia({ prefix: "/auth" })
         password: t.String(),
         role: Role,
       }),
-    }
+    },
   );

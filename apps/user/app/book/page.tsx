@@ -21,6 +21,7 @@ import { MButton } from "@/components/mutation-button";
 import api from "@repo/eden";
 import { useRouter } from "next/navigation";
 import MapComp from "@/components/map";
+import Image from "next/image";
 
 export default function Book() {
   const router = useRouter();
@@ -73,14 +74,14 @@ export default function Book() {
       (err) => {
         console.error("Geolocation error:", err.message);
         toast.error(
-          "Unable to get your location. Please enable location permissions."
+          "Unable to get your location. Please enable location permissions.",
         );
       },
       {
         enableHighAccuracy: true,
         timeout: 10000,
         maximumAge: 0,
-      }
+      },
     );
   }, []);
 
@@ -120,7 +121,8 @@ export default function Book() {
               onClick={() => {
                 setOpen(true);
                 setChoose(true);
-              }}>
+              }}
+            >
               <Pencil />
             </Button>
           </div>
@@ -136,7 +138,8 @@ export default function Book() {
               onClick={() => {
                 setOpen(true);
                 setChoose(false);
-              }}>
+              }}
+            >
               <Pencil />
             </Button>
           </div>
@@ -168,28 +171,28 @@ export default function Book() {
           <div className="space-y-4">
             <VehicleSelect
               capacity={1}
-              src="https://img.icons8.com/ios-filled/100/motorcycle.png"
+              src="/motorcycle.png"
               name="Bike"
               select={select}
               setSelect={setSelect}
             />
             <VehicleSelect
               capacity={2}
-              src="https://img.icons8.com/ios-filled/100/fiat-500.png"
+              src="/fiat-500.png"
               name="Auto"
               select={select}
               setSelect={setSelect}
             />
             <VehicleSelect
               capacity={3}
-              src="https://img.icons8.com/ios-filled/100/hatchback.png"
+              src="/hatchback.png"
               name="Hatchback"
               select={select}
               setSelect={setSelect}
             />
             <VehicleSelect
               capacity={4}
-              src="https://img.icons8.com/ios-filled/100/sedan.png"
+              src="/sedan.png"
               name="Sedan"
               select={select}
               setSelect={setSelect}
@@ -207,14 +210,17 @@ export default function Book() {
 const VehicleSelect = ({ src, name, select, setSelect, capacity }: any) => {
   return (
     <Card
-      className={`cursor-pointer select-none transition-all ${select == capacity ? "ring-2 ring-primary border-primary" : ""}`}
+      className={`cursor-pointer shadow-none select-none transition-all ${select == capacity ? "ring-2 ring-primary border-primary" : ""}`}
       onClick={() => {
         setSelect(capacity);
-      }}>
+      }}
+    >
       <CardContent className="px-6">
         <div className="flex items-center gap-3">
-          <img
+          <Image
             src={src}
+            width={12}
+            height={12}
             className="w-12 h-12 rounded-lg bg-blue-100 p-2"
             alt={name}
           />

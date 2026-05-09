@@ -19,16 +19,18 @@ export default function Signup() {
 
   const mutation = useMutation({
     mutationFn: async () => {
-      const res = await api.auth.user.signup.post({
+      const res = await api.auth.signup.post({
+        role: "user",
         email,
         name,
         password,
         confirmPassword,
       });
+      console.log(res.data);
       if (res.status === 200) {
         toast.success("Signup Successful");
       } else {
-        toast.error("Invalid credentials");
+        toast.error(res.data.summary || "Unkown error!");
       }
     },
   });

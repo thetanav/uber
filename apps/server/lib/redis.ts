@@ -1,7 +1,7 @@
 import Redis from "ioredis";
 import { prisma } from "./prisma";
 
-export const redis = new Redis(Bun.env.REDIS_URL);
+export const redis = new Redis(Bun.env.REDIS_URL!);
 
 export async function saveCaptainLocation(
   id: string,

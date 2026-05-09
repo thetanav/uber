@@ -9,26 +9,18 @@ import { broadcastToTrip, broadcastNewTrip } from "../routes/ws";
 
 export const user = new Elysia({ prefix: "/user" })
   .use(jwtPlugin)
-  .derive(async ({ jwt, cookie, headers, set }) => {
-    const token = cookie.auth?.value;
-    console.log("token", token);
-    if (!token) {
-      set.status = 401;
-      throw new Error("Unauthorized");
-    }
-
+  .derive(async ({ jwt, cookie }) => {
+    const token = await cookie.auth?.value;
     try {
       const payload = await jwt.verify(token as string);
-      console.log("payload", payload);
       if (!payload || payload.role !== "user") throw new Error("Invalid token");
       return { payload };
     } catch {
-      set.status = 401;
-      throw new Error("Invalid token");
+      return status(401, "Invalid token");
     }
   })
   .get("/verify", async ({ payload }) => {
-    return "ok";
+    return { ok: true };
   })
   .get("/", async ({ payload }) => {
     const user = await prisma.user.findUnique({
@@ -36,10 +28,6 @@ export const user = new Elysia({ prefix: "/user" })
     });
     if (!user) return status(401, "Unauthorized");
     return { name: user.name, email: user.email, createdAt: user.createdAt };
-  })
-  .post("/logout", ({ cookie }) => {
-    cookie.auth.remove();
-    return { success: true };
   })
   .post(
     "/request",
