@@ -2,8 +2,9 @@
   "name": "uber-backend",
   "version": "1.0.50",
   "scripts": {
-    "dev": "portless api.uber bun run --watch src/index.ts",
-    "lint": "eslint src/**/*.ts",
+    "dev": "bun run --watch src/index.ts",
+    "lint": "oxlint",
+    "lint:fix": "oxlint --fix",
     "db:migrate": "bunx --bun prisma migrate dev",
     "db:gen": "bunx --bun prisma generate",
     "db:push": "bunx --bun prisma db push"
@@ -16,6 +17,7 @@
     "@elysiajs/websocket": "^0.2.8",
     "@prisma/adapter-pg": "^7.0.1",
     "@prisma/client": "^7.0.1",
+    "@socket.io/bun-engine": "^0.1.1",
     "bcrypt": "^6.0.0",
     "decimal.js": "^10.6.0",
     "dotenv": "^17.2.3",
@@ -38,6 +40,7 @@
     "@typescript-eslint/parser": "^8.48.1",
     "bun-types": "latest",
     "eslint": "^9.39.1",
+    "oxlint": "^1.64.0",
     "prisma": "^7.0.1",
     "vitest": "^4.0.15",
     "ws": "^8.18.3"

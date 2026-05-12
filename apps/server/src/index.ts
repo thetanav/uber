@@ -5,14 +5,8 @@ import { swagger } from "@elysiajs/swagger";
 import { cors } from "@elysiajs/cors";
 import { captain } from "../routes/captain";
 import { haversine } from "../lib/math";
-import {
-  handleWebSocket,
-  handleMessage,
-  handleClose,
-  broadcastToTrip,
-  broadcastNewTrip,
-} from "../routes/ws";
 import { logger } from "../lib/logger";
+import { engine } from "../routes/socketio";
 
 const app = new Elysia({
   cookie: {
@@ -88,22 +82,27 @@ const app = new Elysia({
 
 export type App = typeof app;
 
-export { broadcastToTrip, broadcastNewTrip };
+const { websocket } = engine.handler();
 
 const server = Bun.serve({
   port: Bun.env.PORT,
   hostname: "0.0.0.0",
-  fetch: app.fetch,
-  websocket: {
-    message: (ws: any, message) => handleMessage(ws, message),
-    open: (ws: any) => handleWebSocket(ws),
-    close: (ws: any) => handleClose(ws),
+  // fetch: app.fetch,
+  fetch(req, server) {
+    const url = new URL(req.url);
+
+    if (url.pathname === "/socket.io/") {
+      return engine.handleRequest(req, server);
+    } else {
+      return app.fetch(req);
+    }
   },
+  websocket,
 });
 
 logger.info(
   `🦊 uber backend Elysia is running at ${server.hostname}:${server.port}`,
 );
 logger.info(
-  `🔌 WebSocket server is ready at ws://${server.hostname}:${server.port}/ws`,
+  `🔌 SocketIO server is ready at ${server.hostname}:${server.port}/socket.io`,
 );

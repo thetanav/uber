@@ -5,7 +5,7 @@ import { firstCaptain } from "../lib/background";
 import { jwtPlugin } from "../lib/jwt";
 import { haversine } from "../lib/math";
 import { getCaptainLocation } from "../lib/redis";
-import { broadcastToTrip, broadcastNewTrip } from "../routes/ws";
+import { broadcastToTrip, broadcastNewTrip } from "../routes/socketio";
 
 export const user = new Elysia({ prefix: "/user" })
   .use(jwtPlugin)
@@ -174,7 +174,7 @@ export const user = new Elysia({ prefix: "/user" })
   })
   .get("/ongoing", async ({ payload }) => {
     const trips = await prisma.trip.findMany({
-      where: { userId: payload.user, status: OR"ON_TRIP" },
+      where: { userId: payload.user, status: "ON_TRIP" },
       orderBy: { createdAt: "desc" },
     });
 

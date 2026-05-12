@@ -2,7 +2,7 @@ import { Elysia, status, t } from "elysia";
 import { jwtPlugin } from "../lib/jwt";
 import { prisma } from "../lib/prisma";
 import { saveCaptainLocation, findNearestCaptains } from "../lib/redis";
-import { broadcastToTrip } from "../routes/ws";
+import { broadcastToTrip } from "../routes/socketio";
 
 export const captain = new Elysia({ prefix: "/captain" })
   .use(jwtPlugin)
