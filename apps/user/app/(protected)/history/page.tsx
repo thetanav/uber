@@ -1,7 +1,7 @@
 "use client";
 
 import { Card, CardContent } from "@/components/ui/card";
-import api from "@repo/eden";
+import { api } from "@/lib/api";
 import { useQuery } from "@tanstack/react-query";
 import {
   MapPin,
@@ -26,7 +26,7 @@ export default function History() {
   const { data, isLoading } = useQuery({
     queryKey: ["history"],
     queryFn: async () => {
-      const res = await api.user.history.get();
+      const res = await api.get("/user/history");
       if (res.status !== 200) {
         throw new Error("Failed to fetch history");
       }

@@ -18,7 +18,7 @@ import { toast } from "sonner";
 import UserInfo from "@/components/user";
 import { LocationDialog } from "@/components/location-picker";
 import { MButton } from "@/components/mutation-button";
-import api from "@repo/eden";
+import { api } from "@/lib/api";
 import { useRouter } from "next/navigation";
 import MapComp from "@/components/map";
 import Image from "next/image";
@@ -43,7 +43,7 @@ export default function Book() {
     queryKey: ["price", origin, destination, select],
     queryFn: async () => {
       if (origin === undefined || destination === undefined) return;
-      const res = await api.price.post({
+      const res = await api.post("/price", {
         origin,
         destination,
         capacity: select,
@@ -88,7 +88,7 @@ export default function Book() {
   const mutation = useMutation({
     mutationFn: async () => {
       if (origin === undefined || destination === undefined) return;
-      const res = await api.user.request.post({
+      const res = await api.post("/user/request", {
         origin,
         destination,
         capacity: select,

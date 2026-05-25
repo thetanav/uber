@@ -8,7 +8,7 @@ import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { MButton } from "@/components/mutation-button";
-import api from "@repo/eden";
+import { api } from "@/lib/api";
 
 export default function Reset() {
   const router = useRouter();
@@ -16,7 +16,7 @@ export default function Reset() {
 
   const forgotMutation = useMutation({
     mutationFn: async () => {
-      const res = await api.auth.forgot.post({
+      const res = await api.post("/auth/forgot", {
         email,
       });
       if (res.status === 200) {

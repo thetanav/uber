@@ -9,6 +9,8 @@ const nextConfig = {
     // Skip ESLint during build - run separately
     ignoreDuringBuilds: true,
   },
+
+  allowedDevOrigins: ["captain.uber.localhost"],
 };
 
 export default nextConfig;

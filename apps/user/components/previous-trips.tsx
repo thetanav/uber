@@ -1,6 +1,6 @@
 "use client";
 
-import api from "@repo/eden";
+import { api } from "@/lib/api";
 import { useQuery } from "@tanstack/react-query";
 import {
   CircleDashed,
@@ -23,7 +23,7 @@ export const PreviousTrips = () => {
   const { data, isLoading } = useQuery({
     queryKey: ["previous-trips"],
     queryFn: async () => {
-      const res = await api.user.history.get();
+      const res = await api.get("/user/history");
       return res.data;
     },
   });

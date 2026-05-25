@@ -6,14 +6,18 @@ import { PreviousTrips } from "@/components/previous-trips";
 import { useAuth } from "@/lib/store";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import api from "@repo/eden";
+import { api } from "@/lib/api";
 
 export default function Page() {
   const auth = useAuth();
   useQuery({
     queryKey: ["user-info"],
     queryFn: async () => {
-      const res = await api.user.get();
+      const res = await api.get("/user", {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      });
       if (res.status !== 200) {
         throw new Error("Failed to fetch user info");
       }

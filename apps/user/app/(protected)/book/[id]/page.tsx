@@ -2,7 +2,7 @@
 
 import "leaflet/dist/leaflet.css";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import api from "@repo/eden";
+import { api } from "@/lib/api";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { MapPin, Navigation, Loader2, Shield } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -28,7 +28,7 @@ export default function RideDetails() {
 
   const cancelMutation = useMutation({
     mutationFn: async () => {
-      const res = await api.user.cancel.post({ id: rideId });
+      const res = await api.post("/user/cancel", { id: rideId });
       if (res.status !== 200) {
         throw new Error("Failed to cancel trip");
       }
@@ -45,7 +45,7 @@ export default function RideDetails() {
   const { data: trip, isLoading } = useQuery({
     queryKey: ["trip", rideId],
     queryFn: async () => {
-      const res = await api.user.trip({ id: rideId }).get();
+      const res = await api.get(`/user/trip/${rideId}`);
       if (res.status !== 200) {
         throw new Error("Failed to fetch trip details");
       }

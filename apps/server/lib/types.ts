@@ -1,3 +1,4 @@
-import { t } from "elysia";
+import { z } from "zod";
 
-export const Role = t.Union([t.Literal("user"), t.Literal("captain")]);
+export const RoleSchema = z.enum(["user", "captain"]);
+export type Role = z.infer<typeof RoleSchema>;

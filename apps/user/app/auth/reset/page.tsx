@@ -9,7 +9,7 @@ import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
-import api from "@repo/eden";
+import { api } from "@/lib/api";
 
 function ResetForm() {
   const router = useRouter();
@@ -18,12 +18,13 @@ function ResetForm() {
 
   const { mutate, isPending } = useMutation({
     mutationFn: async () => {
-      const res = await api.auth.reset.post(
+      const res = await api.post(
+        "/auth/reset",
         {
           password: newPassword,
         },
         {
-          query: {
+          params: {
             token,
           },
         },

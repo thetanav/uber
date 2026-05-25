@@ -1,13 +1,13 @@
 "use client";
 
-import api from "@repo/eden";
+import { api } from "@/lib/api";
 import { useQuery } from "@tanstack/react-query";
 
 export function useUser() {
   return useQuery({
     queryKey: ["user-info"],
     queryFn: async () => {
-      const res = await api.user.get();
+      const res = await api.get("/user/me");
       if (res.status !== 200) {
         throw new Error("Failed to fetch user info");
       }

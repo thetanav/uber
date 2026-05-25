@@ -3,7 +3,7 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import api from "@repo/eden";
+import { api } from "@/lib/api";
 import { useMutation } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
 import { useState } from "react";
@@ -19,7 +19,7 @@ export default function Signup() {
 
   const mutation = useMutation({
     mutationFn: async () => {
-      const res = await api.auth.signup.post({
+      const res = await api.post("/auth/signup", {
         role: "user",
         email,
         name,

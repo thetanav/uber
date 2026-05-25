@@ -1,7 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   allowedDevOrigins: ["uber.local"],
-  transpilePackages: ["@repo/ui", "@repo/eden"],
+  transpilePackages: ["@repo/ui"],
   typescript: {
     // Skip type checking during build to avoid checking server code
     ignoreBuildErrors: true,

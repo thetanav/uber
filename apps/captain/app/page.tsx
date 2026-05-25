@@ -61,7 +61,7 @@ export default function CaptainDashboard() {
   };
 
   if (!isAuthenticated) {
-    return null;
+    router.push("/auth/signin");
   }
 
   return (
@@ -79,7 +79,8 @@ export default function CaptainDashboard() {
             <Link href="/trips" className="w-full">
               <Button
                 className="w-full"
-                variant={isOnline ? "default" : "secondary"}>
+                variant={isOnline ? "default" : "secondary"}
+              >
                 Available Trips
               </Button>
             </Link>
@@ -101,7 +102,8 @@ export default function CaptainDashboard() {
               <Button
                 onClick={handleToggleOnline}
                 disabled={onlineMutation.isPending || offlineMutation.isPending}
-                variant={isOnline ? "destructive" : "default"}>
+                variant={isOnline ? "destructive" : "default"}
+              >
                 {(onlineMutation.isPending || offlineMutation.isPending) && (
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                 )}

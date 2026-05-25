@@ -1,11 +1,19 @@
-import { jwt } from "@elysiajs/jwt";
-import { t } from "elysia";
+import { sign, verify } from "hono/jwt";
 
-export const jwtPlugin = jwt({
-  secret: Bun.env.JWT_SECRET || "uber",
-  exp: "7d",
-  schema: t.Object({
-    user: t.String(),
-    role: t.Union([t.Literal("user"), t.Literal("captain")]),
-  }),
-});
+export type JwtPayload = {
+  user: string;
+  role: "user" | "captain";
+};
+
+const jwtSecret = Bun.env.JWT_SECRET || "uber";
+
+export async function signJwt(payload: JwtPayload) {
+  return sign(payload, jwtSecret);
+}
+
+export async function verifyJwt(token: string) {
+  console.log("in verifyJwt", token, jwtSecret);
+  const payload = await verify(token, jwtSecret);
+  console.log(">", payload);
+  return payload;
+}

@@ -1,6 +1,6 @@
 "use client";
 
-import api from "@repo/eden";
+import { api } from "@/lib/api";
 import { useMutation } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
@@ -11,7 +11,7 @@ export default function Page() {
 
   const mutation = useMutation({
     mutationFn: async () => {
-      const res = await api.auth.logout.get();
+      const res = await api.get("/auth/logout");
       if (res.status !== 200) {
         throw new Error("Failed to sign out");
       }

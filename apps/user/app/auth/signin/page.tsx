@@ -7,13 +7,13 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import Link from "next/link";
 import { MButton } from "@/components/mutation-button";
-import api from "@repo/eden";
+import { api } from "@/lib/api";
 import { useRouter } from "next/navigation";
 
 export default function Login() {
   const router = useRouter();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [email, setEmail] = useState("tnv@me.com");
+  const [password, setPassword] = useState("123");
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -24,7 +24,7 @@ export default function Login() {
 
   const mutation = useMutation({
     mutationFn: async () => {
-      const res = await api.auth.signin.post({
+      const res = await api.post("/auth/signin", {
         email,
         password,
         role: "user",
@@ -69,7 +69,7 @@ export default function Login() {
           </MButton>
           <div className="text-center text-sm">
             Don't have an account?{" "}
-            <Link href="/auth/signin" className="text-primary hover:underline">
+            <Link href="/auth/signup" className="text-primary hover:underline">
               Sign up
             </Link>
           </div>

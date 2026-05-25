@@ -1,209 +1,176 @@
-import { Elysia, status, t } from "elysia";
-import { jwtPlugin } from "../lib/jwt";
+import { Hono } from "hono";
+import { z } from "zod";
 import { prisma } from "../lib/prisma";
-import { saveCaptainLocation, findNearestCaptains } from "../lib/redis";
 import { broadcastToTrip } from "../routes/socketio";
+import { authCaptain } from "../middleware/auth";
+import type { AppBindings } from "../src/types";
 
-export const captain = new Elysia({ prefix: "/captain" })
-  .use(jwtPlugin)
-  .derive(async ({ jwt, cookie, headers, set }) => {
-    const token = cookie.auth?.value || headers.authorization;
+const CancelSchema = z.object({
+  id: z.string().min(1),
+});
 
-    if (!token) {
-      set.status = 401;
-      throw new Error("Unauthorized");
-    }
+const PickupSchema = z.object({
+  id: z.string().min(1),
+  otp: z.string().min(1),
+});
 
-    try {
-      const payload = await jwt.verify(token as string);
-      if (!payload || payload.role != "captain")
-        throw new Error("Invalid token");
-      return { payload };
-    } catch {
-      set.status = 401;
-      throw new Error("Invalid token");
-    }
-  })
-  .post("/online", async ({ payload }) => {
-    await prisma.captain.update({
-      where: { id: payload.user as string },
-      data: {
-        isOnline: true,
-        isPooling: true,
-      },
-    });
-    return { message: "Captain is now online and pooling" };
-  })
-  .post("/offline", async ({ payload }) => {
-    await prisma.captain.update({
-      where: { id: payload.user as string },
-      data: {
-        isOnline: false,
-        isPooling: false,
-        inDrive: false,
-      },
-    });
-    return { message: "Captain is now offline" };
-  })
-  .post(
-    "/cancel",
-    async ({ body, payload }) => {
-      const { id } = body;
+const CompleteSchema = z.object({
+  id: z.string().min(1),
+});
 
-      const trip = await prisma.trip.findUnique({
-        where: { id },
-      });
-      if (!trip) return { message: "Trip not found!" };
+export const captain = new Hono<AppBindings>().basePath("/captain");
 
-      if (
-        payload.role === "captain" &&
-        trip.captainId === (payload.user as string)
-      ) {
-        await prisma.trip.update({
-          where: { id },
-          data: { status: "CANCELLED" },
-        });
-        broadcastToTrip(id, {
-          type: "trip_update",
-          tripId: id,
-          status: "CANCELLED",
-        });
-      } else {
-        return status(401, "Unauthorized");
-      }
+captain.use("/*", authCaptain);
 
-      return { message: "Trip cancelled successfully!" };
-    },
-    {
-      body: t.Object({
-        id: t.String(),
-      }),
-    },
-  )
-  .post(
-    "/pickup",
-    async ({ body, payload }) => {
-      // check the trip id and otp of the trip and also the trip has not started also the trip captain is the
-      const { id, otp } = body;
-
-      const captain = await prisma.captain.findUnique({
-        where: { id: payload.user as string },
-      });
-      if (!captain) return status(401, "Unauthorized");
-
-      const trip = await prisma.trip.findUnique({
-        where: { id },
-      });
-      if (
-        !trip ||
-        trip.captainId !== captain.id ||
-        trip.status !== "ACCEPTED" ||
-        trip.otp !== otp
-      ) {
-        return { message: "Invalid trip or OTP!" };
-      }
-
-      await prisma.trip.update({
-        where: { id },
-        data: { status: "ON_TRIP" },
-      });
-      broadcastToTrip(id, {
-        type: "trip_update",
-        tripId: id,
-        status: "ON_TRIP",
-      });
-
-      return { message: "Trip picked up successfully!" };
-    },
-    {
-      body: t.Object({
-        id: t.String(),
-        otp: t.String(),
-      }),
-    },
-  )
-  .post(
-    "/complete",
-    async ({ body, payload }) => {
-      const { id } = body;
-
-      const captain = await prisma.captain.findUnique({
-        where: { id: payload.user as string },
-      });
-      if (!captain) return status(401, "Unauthorized");
-
-      const trip = await prisma.trip.findUnique({
-        where: { id },
-      });
-      if (!trip || trip.captainId !== captain.id || trip.status !== "ON_TRIP") {
-        return { message: "Invalid trip!" };
-      }
-
-      await prisma.trip.update({
-        where: { id },
-        data: { status: "COMPLETED" },
-      });
-      broadcastToTrip(id, {
-        type: "trip_update",
-        tripId: id,
-        status: "COMPLETED",
-      });
-
-      return { message: "Trip completed successfully!" };
-    },
-    {
-      body: t.Object({
-        id: t.String(),
-      }),
-    },
-  )
-  .get("/history", async ({ payload }) => {
-    const trips = await prisma.trip.findMany({
-      where: { captainId: payload.user as string },
-      include: { user: true },
-      orderBy: { createdAt: "desc" },
-    });
-
-    return { trips };
-  })
-  .post("/trips/:id/accept", async ({ params, payload }) => {
-    const captain = await prisma.captain.findUnique({
-      where: { id: payload.user as string },
-    });
-    if (!captain) return status(401, "Unauthorized");
-
-    if (!captain.isOnline || captain.inDrive) {
-      return { message: "Captain is not available" };
-    }
-
-    const trip = await prisma.trip.findUnique({
-      where: { id: params.id },
-    });
-    if (!trip || trip.status !== "REQUESTED" || trip.captainId) {
-      return { message: "Trip is not available" };
-    }
-
-    await prisma.$transaction([
-      prisma.trip.update({
-        where: { id: params.id },
-        data: {
-          captainId: captain.id,
-          status: "ACCEPTED",
-        },
-      }),
-      prisma.captain.update({
-        where: { id: captain.id },
-        data: {
-          inDrive: true,
-          isPooling: false,
-        },
-      }),
-    ]);
-    broadcastToTrip(params.id, {
-      type: "trip_update",
-      tripId: params.id,
-      status: "ACCEPTED",
-    });
-
-    return { message: "Trip accepted successfully!" };
+captain.post("/online", async (c) => {
+  const payload = c.get("auth");
+  await prisma.captain.update({
+    where: { id: payload.user },
+    data: { isOnline: true, isPooling: true },
   });
+  return c.json({ message: "Captain is now online and pooling" });
+});
+
+captain.post("/offline", async (c) => {
+  const payload = c.get("auth");
+  await prisma.captain.update({
+    where: { id: payload.user },
+    data: { isOnline: false, isPooling: false, inDrive: false },
+  });
+  return c.json({ message: "Captain is now offline" });
+});
+
+captain.post("/cancel", async (c) => {
+  const payload = c.get("auth");
+  const body = CancelSchema.parse(await c.req.json());
+  const { id } = body;
+
+  const trip = await prisma.trip.findUnique({ where: { id } });
+  if (!trip) return c.json({ message: "Trip not found!" });
+
+  if (payload.role === "captain" && trip.captainId === payload.user) {
+    await prisma.trip.update({
+      where: { id },
+      data: { status: "CANCELLED" },
+    });
+    broadcastToTrip(id, {
+      type: "trip_update",
+      tripId: id,
+      status: "CANCELLED",
+    });
+  } else {
+    return c.json({ message: "Unauthorized" }, 401);
+  }
+
+  return c.json({ message: "Trip cancelled successfully!" });
+});
+
+captain.post("/pickup", async (c) => {
+  const payload = c.get("auth");
+  const body = PickupSchema.parse(await c.req.json());
+  const { id, otp } = body;
+
+  const captainUser = await prisma.captain.findUnique({
+    where: { id: payload.user },
+  });
+  if (!captainUser) return c.json({ message: "Unauthorized" }, 401);
+
+  const trip = await prisma.trip.findUnique({ where: { id } });
+  if (
+    !trip ||
+    trip.captainId !== captainUser.id ||
+    trip.status !== "ACCEPTED" ||
+    trip.otp !== otp
+  ) {
+    return c.json({ message: "Invalid trip or OTP!" });
+  }
+
+  await prisma.trip.update({
+    where: { id },
+    data: { status: "ON_TRIP" },
+  });
+  broadcastToTrip(id, {
+    type: "trip_update",
+    tripId: id,
+    status: "ON_TRIP",
+  });
+
+  return c.json({ message: "Trip picked up successfully!" });
+});
+
+captain.post("/complete", async (c) => {
+  const payload = c.get("auth");
+  const body = CompleteSchema.parse(await c.req.json());
+  const { id } = body;
+
+  const captainUser = await prisma.captain.findUnique({
+    where: { id: payload.user },
+  });
+  if (!captainUser) return c.json({ message: "Unauthorized" }, 401);
+
+  const trip = await prisma.trip.findUnique({ where: { id } });
+  if (!trip || trip.captainId !== captainUser.id || trip.status !== "ON_TRIP") {
+    return c.json({ message: "Invalid trip!" });
+  }
+
+  await prisma.trip.update({
+    where: { id },
+    data: { status: "COMPLETED" },
+  });
+  broadcastToTrip(id, {
+    type: "trip_update",
+    tripId: id,
+    status: "COMPLETED",
+  });
+
+  return c.json({ message: "Trip completed successfully!" });
+});
+
+captain.get("/history", async (c) => {
+  const payload = c.get("auth");
+  const trips = await prisma.trip.findMany({
+    where: { captainId: payload.user },
+    include: { user: true },
+    orderBy: { createdAt: "desc" },
+  });
+
+  return c.json({ trips });
+});
+
+captain.post("/trips/:id/accept", async (c) => {
+  const payload = c.get("auth");
+  const captainUser = await prisma.captain.findUnique({
+    where: { id: payload.user },
+  });
+  if (!captainUser) return c.json({ message: "Unauthorized" }, 401);
+
+  if (!captainUser.isOnline || captainUser.inDrive) {
+    return c.json({ message: "Captain is not available" });
+  }
+
+  const trip = await prisma.trip.findUnique({
+    where: { id: c.req.param("id") },
+  });
+  if (!trip || trip.status !== "REQUESTED" || trip.captainId) {
+    return c.json({ message: "Trip is not available" });
+  }
+
+  await prisma.$transaction([
+    prisma.trip.update({
+      where: { id: c.req.param("id") },
+      data: { captainId: captainUser.id, status: "ACCEPTED" },
+    }),
+    prisma.captain.update({
+      where: { id: captainUser.id },
+      data: { inDrive: true, isPooling: false },
+    }),
+  ]);
+
+  broadcastToTrip(c.req.param("id"), {
+    type: "trip_update",
+    tripId: c.req.param("id"),
+    status: "ACCEPTED",
+  });
+
+  return c.json({ message: "Trip accepted successfully!" });
+});
